@@ -1,0 +1,12 @@
+{
+  "name": "MusicShare",
+  "version": "1.0.0",
+  "type": "module",
+  "dependencies": {
+    "@react-native-firebase/auth": "^18.1.0",
+    "cors": "^2.8.5",
+    "dotenv": "^16.3.1",
+    "firebase": "^9.23.0",
+    "mongoose": "^7.3.2"
+  }
+}
