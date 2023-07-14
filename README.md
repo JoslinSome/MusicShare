@@ -11,9 +11,6 @@ Tired of having to send spotify  group session links to all of your friends ever
 ## Current status
 ![ezgif com-resize (2)](https://github.com/JoslinSome/WeRock/assets/69180570/e1bde7cd-19d2-429c-b5de-8ec0434e1494)
 
-## Example Use
-
-![QuickShareGif1](https://user-images.githubusercontent.com/71299314/226373528-37133e02-4e2c-40bd-8872-74856a2d3ef3.gif)
 
 ## How to use
 
