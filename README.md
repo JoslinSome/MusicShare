@@ -9,7 +9,7 @@ Tired of having to send spotify  group session links to all of your friends ever
 - View extra details on friends music habits
   
 ## Current status
-![ezgif com-resize (2)](https://github.com/JoslinSome/WeRock/assets/69180570/e1bde7cd-19d2-429c-b5de-8ec0434e1494)
+![ezgif com-resize (4)](https://github.com/JoslinSome/WeRock/assets/69180570/059232c9-104e-4afb-a12a-4a13c719a54e)
 
 
 ## How to use
