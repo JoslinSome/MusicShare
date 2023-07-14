@@ -39,4 +39,23 @@ router.put("/add-users", async (req, res) =>{
     res.json({message: "User added successfully"})
 })
 
+router.get("/get-user-groups", async (req, res) =>{
+    const {username} = req.body
+    const user = await userModel.findOne({username})
+    res.send(user.groups)
+})
+//Replace username with JWT later
+router.get("/get-group", async (req,res) => {
+    const {name,username} = req.body
+    const user = await userModel.findOne({username})
+    if(!user){
+        return res.send({message: "User not found"})
+    }
+    const group = await groupsModel.findOne({name,users: {'$in': [user._id]}})
+    if(!group){
+        return res.send({message: "Group not found"})
+    }
+    res.json(group)
+})
+
 export {router as GroupRouter}
