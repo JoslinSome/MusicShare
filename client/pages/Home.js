@@ -4,8 +4,30 @@ import {Ionicons} from "@expo/vector-icons";
 import * as React from "react";
 import {backgroundColor, titleColor} from "../config/colors";
 import IconButton from "../components/IconButton";
+import {useEffect, useState} from "react";
+import axios from "axios";
+import {api} from "../config/Api";
+import {useCookies} from "react-cookie";
 
 export default function HomePage({navigation}) {
+    const [cookies,setCookies] = useCookies(['access-token',"username"])
+    async function loadGroups(){
+        await axios.get("http://" + api + `/group/get-user-groups`, {
+            params: {
+               username: cookies.username
+            }
+        })
+            .then(r => {
+                console.log("RESPGroup", r.data)
+
+            })
+    }
+    useEffect( () => {
+        loadGroups()
+            .then(r => console.log("Groups Loaded"))
+            .catch(err=> console.log(err,"Error Loading"))
+    }, );
+
     return(
         <View style={styles.container}>
             <View styl={styles.top}>
@@ -27,7 +49,7 @@ export default function HomePage({navigation}) {
 
             </ScrollView>
             <View style={styles.btn}>
-                <IconButton onPress={()=> navigation.navigate("CreateGroup")} icon={"headset-outline"}/>
+                <IconButton onPress={()=> navigation.navigate("CreateGroup")} icon={"headset-outline"} />
             </View >
         </View>
     )

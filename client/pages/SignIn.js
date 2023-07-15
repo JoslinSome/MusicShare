@@ -12,7 +12,7 @@ export default function SignIn({navigation}){
     const [userName, setUserName] = useState("")
     const [password, setPassword] = useState("")
     const [err, setErr] = useState("")
-    const [_,setCookie] = useCookies(["access-token"])
+    const [_,setCookie] = useCookies(["access-token","username"])
 
     async function signIn(){
          await axios.post("http://"+api+`/auth/login`, {
@@ -25,6 +25,7 @@ export default function SignIn({navigation}){
                 }
                 else{
                     setCookie("access-token",r.data.token)
+                    setCookie("username",r.data.username)
                     console.log(r.data)
                     //window.localStorage.setItem("userId",r.data.userId)
                     navigation.navigate("Home")

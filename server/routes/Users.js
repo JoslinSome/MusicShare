@@ -31,7 +31,7 @@ router.post("/login", async (req,res) =>{
         return res.json({message: "Username or Password incorrect"})
     }
     const token = jwt.sign({id: user._id}, "secret")
-    res.json({token, userID: user._id})
+    res.json({token, username: user.username})
 })
 function generateRandomString(length) {
     let text = '';
