@@ -1,16 +1,19 @@
-import {View, Text, StyleSheet, ScrollView, TouchableOpacity} from "react-native"
+import {View, Text, StyleSheet, ScrollView, TouchableOpacity, FlatList} from "react-native"
 import {height, width} from "../config/DeviceDemensions";
 import {Ionicons} from "@expo/vector-icons";
 import * as React from "react";
 import {backgroundColor, titleColor} from "../config/colors";
 import IconButton from "../components/IconButton";
-import {useEffect, useState} from "react";
+import {useEffect, useRef, useState} from "react";
 import axios from "axios";
 import {api} from "../config/Api";
-import {useCookies} from "react-cookie";
+import { List, MD3Colors } from 'react-native-paper';
 
+import {useCookies} from "react-cookie";
+import {Item} from "react-native-paper/src/components/List/List";
 export default function HomePage({navigation}) {
     const [cookies,setCookies] = useCookies(['access-token',"username"])
+    const groups =useRef([])
     async function loadGroups(){
         await axios.get("http://" + api + `/group/get-user-groups`, {
             params: {
@@ -18,8 +21,8 @@ export default function HomePage({navigation}) {
             }
         })
             .then(r => {
-                console.log("RESPGroup", r.data)
-
+                groups.current = r.data
+                console.log(groups.current)
             })
     }
     useEffect( () => {
@@ -27,27 +30,22 @@ export default function HomePage({navigation}) {
             .then(r => console.log("Groups Loaded"))
             .catch(err=> console.log(err,"Error Loading"))
     }, );
+    const renderItem = ({item}) => {
 
+        return (
+            <View style={styles.list}>
+                <List.Section>
+                    <List.Item style={styles.listItem} description={"THis is a sadnasjdnalksjdaskl"} title="First tem" left={() => <List.Icon icon="folder" />} />
+                </List.Section>
+            </View>
+        );
+    };
     return(
         <View style={styles.container}>
-            <View styl={styles.top}>
-                <View style={styles.row}>
-                    <Text style={styles.title}>Your Groups</Text>
-                    <View style={styles.icons}>
-                        <TouchableOpacity>
-                            <Ionicons name="notifications-outline" size={30} color={"#c6bce0"}/>
-                        </TouchableOpacity>
-                        <TouchableOpacity>
-                            <Ionicons name="settings-outline" style={styles.icon} size={30} color={"#c6bce0"}/>
-                        </TouchableOpacity>
-                    </View>
-                </View>
-            </View>
-
-
-            <ScrollView>
-
-            </ScrollView>
+            <FlatList
+                data={groups.current}
+                keyExtractor={item => item._id}
+                renderItem={renderItem}/>
             <View style={styles.btn}>
                 <IconButton onPress={()=> navigation.navigate("CreateGroup")} icon={"headset-outline"} />
             </View >
@@ -57,9 +55,18 @@ export default function HomePage({navigation}) {
 
 
 const styles = StyleSheet.create({
-    top: {
 
+    list: {
+        backgroundColor: 'rgba(46,9,84,0.72)',
+        width: '100%',
+        margin: .5
     },
+    item: {
+        padding: 20,
+        marginVertical: 8,
+        marginHorizontal: 16,
+    },
+
     btn: {
         bottom: 80,
         alignSelf: "flex-end",
@@ -79,7 +86,8 @@ const styles = StyleSheet.create({
         right: -100,
 
     },
-
+    listItem: {
+    },
     row:{
         flexDirection: "row",
         //backgroundColor: 'rgba(64,36,80,0.34)',
