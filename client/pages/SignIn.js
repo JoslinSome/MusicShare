@@ -28,7 +28,7 @@ export default function SignIn({navigation}){
                     setCookie("username",r.data.username)
                     console.log(r.data)
                     //window.localStorage.setItem("userId",r.data.userId)
-                    navigation.navigate("Home")
+                    navigation.navigate('Home')
                 }
 
             })

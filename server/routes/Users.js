@@ -44,13 +44,16 @@ function generateRandomString(length) {
 }
 
 router.get('/spotify-login', function(req, res) {
+    const state = generateRandomString(16);
+    const scope = 'user-read-private user-read-email user-modify-playback-state';
+
     res.redirect('https://accounts.spotify.com/authorize?' +
         querystring.stringify({
             response_type: 'code',
-            client_id: process.env.SPOTIFY_CLIENT,
-            scope: 'user-read-private user-read-email',
-            redirect_uri: process.env.REDIRECT_URI,
-            state: generateRandomString(16),
+            client_id: "fbec141564674a6e9893d7c1f6cda9ed",
+            scope: scope,
+            redirect_uri: "exp://192.168.0.108:19000",
+            state: state
         }));
 });
 

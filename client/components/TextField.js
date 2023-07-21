@@ -1,14 +1,15 @@
 import {View, StyleSheet, Text,TextInput} from "react-native"
 import {width,height} from "../config/DeviceDemensions";
 import {useState} from "react";
+import {Ionicons} from "@expo/vector-icons";
 
-export default function TextField({title,password,half,onChange}){
+export default function TextField({title,password,half,onChange, icon,placeholder}){
 
     return(
         <View style={styles.field}>
             <Text style={styles.text}>{title}</Text>
             <View style={half? styles.container2 :styles.container}>
-                <TextInput secureTextEntry={password} onChangeText={text  => onChange(text)}/>
+                <TextInput placeholder={placeholder? placeholder:null} secureTextEntry={password} onChangeText={text  => onChange(text)}/>
             </View>
         </View>
     )
@@ -39,5 +40,6 @@ const styles = StyleSheet.create({
     },
     field: {
         padding: 10
-    }
+    },
+
 })
