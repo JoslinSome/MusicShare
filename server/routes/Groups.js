@@ -1,6 +1,6 @@
 import {groupsModel} from "../models/Groups.js";
 import {userModel} from "../models/Users.js";
-import express from "express";
+import express, {Router} from "express";
 
 const router = express.Router()
 
@@ -38,7 +38,31 @@ router.put("/add-users", async (req, res) =>{
     await group.save()
     res.json({message: "User added successfully"})
 })
-
+router.put("/enqueue", async (req,res) =>{
+    const {groupID,song} = req.body.params
+    const group = await groupsModel.findById(groupID)
+    if(!group){
+        console.log("does not exist")
+        return res.json({message: "Group does not exist"})
+    }
+    group.queue.push(song)
+    await group.save()
+    console.log("Song queued")
+    res.json({message: "Song queued"})
+})
+router.put("/dequeue", async (req,res) =>{
+    const {groupID} = req.body
+    const group = await groupsModel.findById(groupID)
+    if(!group){
+        return res.json({message: "Group does not exist"})
+    }
+    if(group.queue.length==0){
+        res.json({message: "No song queued"})
+    }
+    const song =group.queue.shift()
+    await group.save()
+    res.json(song)
+})
 router.get("/get-user-groups", async (req, res) =>{
     const {username} = req.query
     const user = await userModel.findOne({username})
@@ -51,12 +75,9 @@ router.get("/get-user-groups", async (req, res) =>{
 })
 //Replace username with JWT later
 router.get("/get-group", async (req,res) => {
-    const {name,username} = req.body
-    const user = await userModel.findOne({username})
-    if(!user){
-        return res.send({message: "User not found"})
-    }
-    const group = await groupsModel.findOne({name,users: {'$in': [user._id]}})
+    const {groupID} = req.body
+
+    const group = await groupsModel.findById(groupID)
     if(!group){
         return res.send({message: "Group not found"})
     }

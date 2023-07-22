@@ -68,7 +68,7 @@ export default function HomePage({route, navigation}) {
                 token: token
             })}>
                 <List.Section>
-                    <List.Item style={styles.listItem} descriptionStyle={styles.desc} description={item.queue.length>0 ? groups.queue[0] : "No song queued" }  titleStyle={styles.title1} title={item.name} left={() => <ImageIcon size={20}/>} />
+                    <List.Item style={styles.listItem} descriptionStyle={styles.desc} description={item.queue.length>0 ? item.queue[0].name : "No song queued" }  titleStyle={styles.title1} title={item.name} left={() => <ImageIcon size={20}/>} />
                 </List.Section>
             </TouchableOpacity>
         );

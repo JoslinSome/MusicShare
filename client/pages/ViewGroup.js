@@ -1,4 +1,4 @@
-import {View, StyleSheet, Text, Image, TouchableOpacity, FlatList} from "react-native";
+import {View, StyleSheet, Text, Image, TouchableOpacity, FlatList, AppRegistry} from "react-native";
 import LongBtn from "../components/LongBtn";
 import {makeRedirectUri, ResponseType, useAuthRequest} from "expo-auth-session";
 import {useEffect, useState} from 'react';
@@ -12,7 +12,8 @@ import ProgressBar from 'react-native-progress/Bar';
 import TextField from "../components/TextField";
 import {List} from "react-native-paper";
 import ImageIcon from "../components/ImageIcon";
-
+import Alert from "../components/Alert"
+import {api} from "../config/Api";
 export default function ViewGroup({navigation,route}){
     const [image, setImage] = useState()
     const [isPlaying, setIsPlaying] = useState(false)
@@ -22,12 +23,10 @@ export default function ViewGroup({navigation,route}){
     const [text, setText] = useState("")
     const [time, setTime] = useState()
     const [tracks, setTracks] = useState({})
-    const {token} = route.params
+    const {token,group} = route.params
+    const [alert, setAlert] = useState(false)
     useEffect( () => {
         getCurrentSong(token).then(r=>console.log("good")).catch(e=>console.log("bad",e))
-        if(text.length>0){
-            searchSong(token).then(r=>console.log("good1")).catch(e=>console.log("bad1",e))
-        }
 
     }, );
     const getCurrentSong = async (token) => {
@@ -59,16 +58,38 @@ export default function ViewGroup({navigation,route}){
 
         }).catch(err=>console.log(err,token))
     }
+    function timeout(delay: number) {
+        return new Promise( res => setTimeout(res, delay) );
+    }
+    async function triggerAlert() {
+        setAlert(true)
+        await timeout(3000);
+        setAlert(false)
+    }
     const renderItem = ({item}) => {
         return (
-            <TouchableOpacity style={styles.list}>
+            <TouchableOpacity style={styles.list} onPress={()=>enqueue(item)}>
                 <List.Section>
                     <List.Item style={styles.listItem} descriptionStyle={styles.artistText} description={item.artist}  titleStyle={styles.text} title={item.name} right={() => <Ionicons style={{top:10}} name={"add-circle-outline"} color={"#fff"} size={40}/>} left={() => <Image style={{width: 50, height: 60, opacity: 0.8, left: 5,top: 5}} source={{uri: item.image}}/>}/>
                 </List.Section>
             </TouchableOpacity>
         );
     };
-    const searchSong = async (token) => {
+    const enqueue = async (item) => {
+        await triggerAlert()
+        await axios.put("http://" + api + `/group/enqueue`, {
+            params: {
+                groupID: group._id,
+                song: {
+                    name: item.name,
+                    artist: item.artist,
+                    uri: item.uri,
+                    image: item.image
+                }
+            }
+        })
+    }
+    const searchSong = async (token,text) => {
 
         await axios.get("https://api.spotify.com/v1/search", {
             headers: {
@@ -97,18 +118,29 @@ export default function ViewGroup({navigation,route}){
 
     return(
         <View style={styles.container}>
+            <Text style={styles.title}>Add to queue</Text>
             <View style={styles.search} >
-                <TextField placeholder={"Search a song to add to queue"} text={"Search"} onChange={setText} icon={"search-outline"}/>
+                <TextField placeholder={"Search a song to add to queue"} text={"Search"} onChange={searchSong} icon={"search-outline"} token={token}/>
             </View>
             <FlatList
                 style={styles.flat}
                 data={tracks}
                 keyExtractor={item => item._id}
                 renderItem={renderItem}/>
+            {
+                alert?
+                    <View style={styles.alert}>
+                        <Alert text={"Song added to queue"}/>
+                    </View>
+                    :null
+            }
+
                 {
                     isPlaying?
                         <View>
-                            <View style={styles.musicBox}>
+                            <TouchableOpacity style={styles.musicBox} onPress={()=>navigation.navigate("VieQueue",{
+                                group: group
+                            })}>
 
                                 <View style={styles.row}>
                                     <Image  source={{uri: image}}
@@ -122,7 +154,7 @@ export default function ViewGroup({navigation,route}){
                                     <Ionicons name={"pause-outline"}  color={"#fff"} size={35} style={styles.icon}/>
                                 </TouchableOpacity>
 
-                            </View>
+                            </TouchableOpacity>
                             <ProgressBar progress={time && progress? progress/time: 0} width={width/2} height={5} color={"#fff"} style={styles.progress}/>
                         </View>
                         :  <View style={styles.musicBox}>
@@ -150,6 +182,9 @@ const styles = StyleSheet.create({
         backgroundColor: '#121b22',
         alignItems: 'center',
     },
+    search: {
+        marginTop: -20
+    },
 
     musicBox: {
         backgroundColor: 'rgba(42,78,107,0.68)',
@@ -165,8 +200,18 @@ const styles = StyleSheet.create({
     progress: {
         left: 16
     },
+    alert: {
+        width: '97%',
+        marginBottom: 20
+    },
     textContainer: {
 
+    },
+    title: {
+        marginTop: 30,
+        color: "white",
+        fontWeight: "bold",
+        fontSize: 20
     },
     text: {
         color: "white",

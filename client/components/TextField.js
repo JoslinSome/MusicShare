@@ -3,13 +3,13 @@ import {width,height} from "../config/DeviceDemensions";
 import {useState} from "react";
 import {Ionicons} from "@expo/vector-icons";
 
-export default function TextField({title,password,half,onChange, icon,placeholder}){
+export default function TextField({title,password,half,onChange, icon,placeholder,text,token}){
 
     return(
         <View style={styles.field}>
             <Text style={styles.text}>{title}</Text>
             <View style={half? styles.container2 :styles.container}>
-                <TextInput placeholder={placeholder? placeholder:null} secureTextEntry={password} onChangeText={text  => onChange(text)}/>
+                <TextInput placeholder={placeholder? placeholder:null} secureTextEntry={password} onChangeText={token?text  => onChange(token,text):  text  => onChange(text)}/>
             </View>
         </View>
     )
