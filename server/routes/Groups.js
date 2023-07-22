@@ -91,8 +91,7 @@ router.get("/get-user-groups", async (req, res) =>{
 })
 //Replace username with JWT later
 router.get("/get-group", async (req,res) => {
-    const {groupID} = req.body
-
+    const {groupID} = req.query
     const group = await groupsModel.findById(groupID)
     if(!group){
         return res.send({message: "Group not found"})

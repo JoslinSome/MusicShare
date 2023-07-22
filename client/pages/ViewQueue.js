@@ -9,19 +9,20 @@ import IconButton from "../components/IconButton";
 
 export default function ViewQueue({navigation,route}) {
     const {group} = route.params
-    const [queue, setQueue] = useState()
+    const [queue, setQueue] = useState([])
     useEffect( () => {
         getQueue().then(r=>console.log("good")).catch(e=>console.log("bad",e))
 
     }, );
+
     async function getQueue() {
         await axios.get("http://" + api + `/group/get-group`, {
             params: {
                 groupID: group._id,
             }
         }).then(r=> {
-            setQueue(r.queue)
-            console.log(queue)
+            setQueue(r.data.queue)
+            console.log("HEEHEHHEHssEHsasEH",r.data.queue)
         })
     }
     async function removeSong(song) {
@@ -50,7 +51,7 @@ export default function ViewQueue({navigation,route}) {
             <Text style={styles.text1}>Current Queue</Text>
             <FlatList
                 style={styles.flat}
-                data={group.queue}
+                data={queue}
                 keyExtractor={item => item._id}
                 renderItem={renderItem}/>
         </View>

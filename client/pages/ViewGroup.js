@@ -25,8 +25,9 @@ export default function ViewGroup({navigation,route}){
     const [tracks, setTracks] = useState({})
     const {token,group} = route.params
     const [alert, setAlert] = useState(false)
+    const [currSong, setCurrSong] = useState(null)
     useEffect( () => {
-        getCurrentSong(token).then(r=>console.log("good")).catch(e=>console.log("bad",e))
+        getCurrentSong(token).then(r=>setCurrSong(r)).catch(e=>console.log("bad",e))
 
     }, );
     const getCurrentSong = async (token) => {
@@ -115,6 +116,82 @@ export default function ViewGroup({navigation,route}){
             setTracks(trackList)
             console.log(trackList)
         }).catch(e=>console.log(e,"Errrr"))}
+    function musicBox() {
+        if(currSong){
+            if(isPlaying){
+                return(
+                    <View>
+                        <TouchableOpacity style={styles.musicBox} onPress={()=>navigation.navigate("ViewQueue",{group})}>
+
+                            <View style={styles.row}>
+                                <Image  source={{uri: image}}
+                                        style={{width: 50, height: 60, opacity: 0.8, left: 5,top: 5}}/>
+                                <View style={styles.textContainer}>
+                                    <Text style={styles.text}>{songName}</Text>
+                                    <Text style={styles.artistText}>{artists}</Text>
+                                </View>
+                            </View>
+                            <TouchableOpacity onPress={()=>setIsPlaying(!isPlaying)}>
+                                <Ionicons name={"pause-outline"}  color={"#fff"} size={35} style={styles.icon}/>
+                            </TouchableOpacity>
+
+                        </TouchableOpacity>
+                        <ProgressBar progress={time && progress? progress/time: 0} width={width/2} height={5} color={"#fff"} style={styles.progress}/>
+                    </View>)
+            }
+            else{
+                return(
+                    <TouchableOpacity  style={styles.musicBox} onPress={()=>navigation.navigate("ViewQueue",{group})}>
+
+                        <View style={styles.row}>
+                            <Image  source={{uri: image}}
+                                    style={{width: 50, height: 60, opacity: 0.8, left: 5,top: 5}}/>
+                            <View style={styles.textContainer}>
+                                <Text style={styles.text}>{songName}</Text>
+                                <Text style={styles.artistText}>{artists}</Text>
+                            </View>
+                        </View>
+                        <TouchableOpacity onPress={()=>setIsPlaying(!isPlaying)}>
+                            <Ionicons name={"play-outline"}  color={"#fff"} size={35} style={styles.icon}/>
+                        </TouchableOpacity>
+                    </TouchableOpacity>
+                )
+            }
+        }
+        else {
+            if(group.queue.length>0){
+                const song =group.queue[0]
+                return (
+                    <TouchableOpacity  style={styles.musicBox} onPress={()=>navigation.navigate("ViewQueue",{group})}>
+                        <View style={styles.row}>
+                            <Image  source={{uri: song.image}}
+                                    style={{width: 50, height: 60, opacity: 0.8, left: 5,top: 5}}/>
+                            <View style={styles.textContainer}>
+                                <Text style={styles.text}>{song.name}</Text>
+                                <Text style={styles.artistText}>{song.artist}</Text>
+                            </View>
+                        </View>
+                        <TouchableOpacity onPress={()=>setIsPlaying(!isPlaying)}>
+                            <Ionicons name={"play-outline"}  color={"#fff"} size={35} style={styles.icon}/>
+                        </TouchableOpacity>
+                    </TouchableOpacity>
+                )
+            }
+            else{
+                return(
+                    <TouchableOpacity  style={styles.musicBox} onPress={()=>navigation.navigate("ViewQueue",{group})}>
+
+                        <View style={styles.row}>
+                            <Text style={styles.text2}>No song queued</Text>
+                        </View>
+                        <TouchableOpacity onPress={()=>setIsPlaying(!isPlaying)}>
+                            <Ionicons name={"musical-notes-outline"}  color={"#9b9595"} size={35} style={styles.icon}/>
+                        </TouchableOpacity>
+                    </TouchableOpacity>
+                )
+            }
+        }
+    }
 
     return(
         <View style={styles.container}>
@@ -135,41 +212,7 @@ export default function ViewGroup({navigation,route}){
                     :null
             }
 
-                {
-                    isPlaying?
-                        <View>
-                            <TouchableOpacity style={styles.musicBox} onPress={()=>navigation.navigate("ViewQueue",{group})}>
-
-                                <View style={styles.row}>
-                                    <Image  source={{uri: image}}
-                                        style={{width: 50, height: 60, opacity: 0.8, left: 5,top: 5}}/>
-                                    <View style={styles.textContainer}>
-                                        <Text style={styles.text}>{songName}</Text>
-                                        <Text style={styles.artistText}>{artists}</Text>
-                                    </View>
-                                </View>
-                                <TouchableOpacity onPress={()=>setIsPlaying(!isPlaying)}>
-                                    <Ionicons name={"pause-outline"}  color={"#fff"} size={35} style={styles.icon}/>
-                                </TouchableOpacity>
-
-                            </TouchableOpacity>
-                            <ProgressBar progress={time && progress? progress/time: 0} width={width/2} height={5} color={"#fff"} style={styles.progress}/>
-                        </View>
-                        :  <TouchableOpacity  style={styles.musicBox} onPress={()=>navigation.navigate("ViewQueue",{group})}>
-
-                            <View style={styles.row}>
-                                <Image  source={{uri: image}}
-                                        style={{width: 50, height: 60, opacity: 0.8, left: 5,top: 5}}/>
-                                <View style={styles.textContainer}>
-                                    <Text style={styles.text}>{songName}</Text>
-                                    <Text style={styles.artistText}>{artists}</Text>
-                                </View>
-                            </View>
-                            <TouchableOpacity onPress={()=>setIsPlaying(!isPlaying)}>
-                                <Ionicons name={"play-outline"}  color={"#fff"} size={35} style={styles.icon}/>
-                            </TouchableOpacity>
-                        </TouchableOpacity>
-                }
+                {musicBox()}
         </View>
     )
 }
@@ -229,6 +272,17 @@ const styles = StyleSheet.create({
         flexDirection: "row",
         width: '100%',
         left: 20
+    },
+    text2: {
+        flexDirection: "row",
+        width: '100%',
+        left: 20,
+        top: 20,
+        color: "#9b9595",
+        fontWeight: "bold",
+        fontSize: 20,
+        marginLeft: 20,
+        fontStyle: "italic"
     },
     desc: {
         color: "rgba(112,107,107,0.86)",
