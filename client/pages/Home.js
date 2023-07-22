@@ -29,7 +29,7 @@ export default function HomePage({route, navigation}) {
     const [request, response, promptAsync] = useAuthRequest(
         {
             responseType: ResponseType.Token,
-            clientId: 'clientid',
+            clientId: 'clientId',
             scopes: ['user-read-email', 'streaming' ,'playlist-modify-public',"user-modify-playback-state","user-read-currently-playing"],
             // In order to follow the "Authorization Code Flow" to fetch token after authorizationEndpoint
             // this must be set to false

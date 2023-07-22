@@ -14,6 +14,8 @@ import {List} from "react-native-paper";
 import ImageIcon from "../components/ImageIcon";
 import Alert from "../components/Alert"
 import {api} from "../config/Api";
+import * as querystring from "querystring";
+
 export default function ViewGroup({navigation,route}){
     const [image, setImage] = useState()
     const [isPlaying, setIsPlaying] = useState(false)
@@ -27,7 +29,10 @@ export default function ViewGroup({navigation,route}){
     const [alert, setAlert] = useState(false)
     const [currSong, setCurrSong] = useState(null)
     useEffect( () => {
-        getCurrentSong(token).then(r=>setCurrSong(r)).catch(e=>console.log("bad",e))
+        getCurrentSong(token).then(r=>setCurrSong(true)).catch(e=>console.log("bad",e))
+        if(progress>time-3000){
+            console.log("Song Finished")
+        }
 
     }, );
     const getCurrentSong = async (token) => {
@@ -76,6 +81,17 @@ export default function ViewGroup({navigation,route}){
             </TouchableOpacity>
         );
     };
+    const dequeue = async (item) => {
+        await triggerAlert()
+        await axios.put("http://" + api + `/group/dequeue`, {
+            params: {
+                groupID: group._id,
+            }
+        }).then(r=>{
+            const {song} = r.data
+            console.log(song)
+        })
+    }
     const enqueue = async (item) => {
         await triggerAlert()
         await axios.put("http://" + api + `/group/enqueue`, {
@@ -89,6 +105,14 @@ export default function ViewGroup({navigation,route}){
                 }
             }
         })
+    }
+    const addToPlaybackQueue = async (token,uri) => {
+        const url = `https://api.spotify.com/v1/me/player/queue?uri=spotify:track:0pqnGHJpmpxLKifKRmU6WP`
+
+        await axios.post(url, null,{
+            headers: {
+                'Authorization': `Bearer ${token}`,
+            }}).then(r=>console.log("SONG QUEUED")).catch(e=>console.log(e,"Song not queued"))
     }
     const searchSong = async (token,text) => {
 
@@ -199,6 +223,7 @@ export default function ViewGroup({navigation,route}){
             <View style={styles.search} >
                 <TextField placeholder={"Search a song to add to queue"} text={"Search"} onChange={searchSong} icon={"search-outline"} token={token}/>
             </View>
+            <LongBtn text={"Add to queue"} click={()=>addToPlaybackQueue(token)}/>
             <FlatList
                 style={styles.flat}
                 data={tracks}
