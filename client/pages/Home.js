@@ -24,7 +24,7 @@ const discovery = {
 export default function HomePage({route, navigation}) {
     const [cookies,setCookies] = useCookies(['access-token',"username"])
     const [groups, setGroups] = useState()
-    const [token, setToken] = useState("")
+    const [token, setToken] = useState(null)
 
     const [request, response, promptAsync] = useAuthRequest(
         {
@@ -73,27 +73,39 @@ export default function HomePage({route, navigation}) {
             </TouchableOpacity>
         );
     };
-    return(
-        <View style={styles.container}>
-            <LongBtn text="Log in to spotify" click={() => {promptAsync().then(r => {
-                setToken(r.authentication.accessToken)
-                console.log()
-            }).catch(e=>console.log())}}/>
-            <FlatList
-                style={styles.flat}
-                data={groups}
-                keyExtractor={item => item._id}
-                renderItem={renderItem}/>
-            <View style={styles.btn}>
-                <IconButton onPress={()=> navigation.navigate("CreateGroup")} icon={"headset-outline"} />
-            </View >
-        </View>
-    )
+    if(token){
+        return(
+            <View style={styles.container}>
+                <FlatList
+                    style={styles.flat}
+                    data={groups}
+                    keyExtractor={item => item._id}
+                    renderItem={renderItem}/>
+                <View style={styles.btn}>
+                    <IconButton onPress={()=> navigation.navigate("CreateGroup")} icon={"headset-outline"} />
+                </View >
+            </View>
+        )}
+    else{
+        return (
+            <View style={styles.container2}>
+                <LongBtn text="Log in to Spotify" click={() => {promptAsync().then(r => {
+                    setToken(r.authentication.accessToken)
+                    console.log()
+                }).catch(e=>console.log())}}/>
+                <LongBtn text="Continue without Spotify"/>
+            </View>
+        )}
 }
 
 
 const styles = StyleSheet.create({
-
+    container2: {
+        alignItems: "center",
+        backgroundColor: '#121b22',
+        height: "100%",
+        justifyContent: "center"
+    },
     list: {
         backgroundColor: '#121b22',
         width: '100%',
