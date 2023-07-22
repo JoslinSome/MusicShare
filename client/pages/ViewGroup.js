@@ -138,9 +138,7 @@ export default function ViewGroup({navigation,route}){
                 {
                     isPlaying?
                         <View>
-                            <TouchableOpacity style={styles.musicBox} onPress={()=>navigation.navigate("VieQueue",{
-                                group: group
-                            })}>
+                            <TouchableOpacity style={styles.musicBox} onPress={()=>navigation.navigate("ViewQueue",{group})}>
 
                                 <View style={styles.row}>
                                     <Image  source={{uri: image}}
@@ -157,7 +155,7 @@ export default function ViewGroup({navigation,route}){
                             </TouchableOpacity>
                             <ProgressBar progress={time && progress? progress/time: 0} width={width/2} height={5} color={"#fff"} style={styles.progress}/>
                         </View>
-                        :  <View style={styles.musicBox}>
+                        :  <TouchableOpacity  style={styles.musicBox} onPress={()=>navigation.navigate("ViewQueue",{group})}>
 
                             <View style={styles.row}>
                                 <Image  source={{uri: image}}
@@ -170,7 +168,7 @@ export default function ViewGroup({navigation,route}){
                             <TouchableOpacity onPress={()=>setIsPlaying(!isPlaying)}>
                                 <Ionicons name={"play-outline"}  color={"#fff"} size={35} style={styles.icon}/>
                             </TouchableOpacity>
-                        </View>
+                        </TouchableOpacity>
                 }
         </View>
     )

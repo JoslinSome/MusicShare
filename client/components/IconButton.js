@@ -2,13 +2,20 @@ import {View, StyleSheet, TouchableOpacity} from "react-native";
 import {Ionicons} from "@expo/vector-icons";
 import * as React from "react";
 
-export default function IconButton({icon,onPress}) {
+export default function IconButton({icon,onPress,noBorder,color}) {
 
     return(
         <View>
-            <TouchableOpacity style={styles.btn} onPress={ onPress}>
-                <Ionicons name={icon} size={30}/>
-            </TouchableOpacity>
+            {
+                noBorder?
+                    <TouchableOpacity style={styles.btn2} onPress={ onPress}>
+                        <Ionicons name={icon} size={35} color={color}/>
+                    </TouchableOpacity>
+                    :
+                    <TouchableOpacity style={styles.btn} onPress={ onPress}>
+                        <Ionicons name={icon} size={30}/>
+                    </TouchableOpacity>
+            }
         </View>
     )
 }
@@ -22,6 +29,10 @@ const styles = StyleSheet.create({
         justifyContent: "center",
         alignItems: "center",
         position: "relative",
+    },
+    btn2: {
+        marginTop: 10
     }
+
 
 })

@@ -51,7 +51,7 @@ router.put("/enqueue", async (req,res) =>{
     res.json({message: "Song queued"})
 })
 router.put("/dequeue", async (req,res) =>{
-    const {groupID} = req.body
+    const {groupID} = req.body.params
     const group = await groupsModel.findById(groupID)
     if(!group){
         return res.json({message: "Group does not exist"})
@@ -62,6 +62,22 @@ router.put("/dequeue", async (req,res) =>{
     const song =group.queue.shift()
     await group.save()
     res.json(song)
+})
+router.put("/remove-song", async (req,res) =>{
+
+    const {groupID, song} = req.body.params
+    const group = await groupsModel.findById(groupID)
+    if(!group){
+        return res.json({message: "Group does not exist"})
+    }
+    if(group.queue.length==0){
+        console.log("no so")
+
+        res.json({message: "No song queued"})
+    }
+    group.queue.pull(song)
+    await group.save()
+    res.json({message: "Song removed"})
 })
 router.get("/get-user-groups", async (req, res) =>{
     const {username} = req.query
