@@ -1,7 +1,7 @@
 import {View, StyleSheet, Text, Image, TouchableOpacity, FlatList, AppRegistry} from "react-native";
 import LongBtn from "../components/LongBtn";
 import {makeRedirectUri, ResponseType, useAuthRequest} from "expo-auth-session";
-import {useEffect, useState} from 'react';
+import {useEffect, useRef, useState} from 'react';
 import * as WebBrowser from "expo-web-browser";
 import * as React from "react";
 import axios from "axios";
@@ -17,24 +17,20 @@ import {api} from "../config/Api";
 import * as querystring from "querystring";
 
 export default function ViewGroup({navigation,route}){
-    const [image, setImage] = useState()
-    const [isPlaying, setIsPlaying] = useState(false)
-    const [songName, setSongName] = useState("")
-    const [artists, setArtists] = useState("")
-    const [progress, setProgress] = useState(true)
     const [text, setText] = useState("")
-    const [time, setTime] = useState()
     const [tracks, setTracks] = useState({})
-    const {token,group} = route.params
+    const {token} = route.params
     const [alert, setAlert] = useState(false)
-    const [currSong, setCurrSong] = useState(null)
-    useEffect( () => {
-        getCurrentSong(token).then(r=>setCurrSong(true)).catch(e=>console.log("bad",e))
-        if(progress>time-3000){
-            console.log("Song Finished")
-        }
-
-    }, );
+    const currSong = useRef(true)
+    const image = useRef(null);
+    const isPlaying = useRef(false);
+    const songName = useRef("");
+    const time = useRef();
+    const [progress,setProgress] = useState();
+    const artists = useRef("");
+    const newSong = useRef(true);
+    const [times, setTimes] = useState(new Date());
+    const progressRef = useRef();
     const getCurrentSong = async (token) => {
 
         await axios.get("https://api.spotify.com/v1/me/player/currently-playing", {
@@ -43,15 +39,19 @@ export default function ViewGroup({navigation,route}){
             },
         }).then(r=> {
             //const res = JSON.parse(r)]
+
             if(!r){
                 return null
             }
-
-            setImage(r.data.item.album.images[0].url)
-            setIsPlaying(r.data.is_playing)
-            setSongName(r.data.item.name)
-            setTime(r.data.item.duration_ms)
+            newSong.current =false
+            progressRef.current=r.data.progress_ms
             setProgress(r.data.progress_ms)
+            currSong.current= r.data.item
+            image.current = r.data.item.album.images[0].url
+            isPlaying.current = r.data.is_playing
+            console.log(r.data.is_playing, "PLAYING?",isPlaying.current)
+            songName.current =r.data.item.name
+            time.current=r.data.item.duration_ms
             let singers = ""
             for (let i = 0; i < r.data.item.artists.length; i++) {
                 singers+= r.data.item.artists[i].name
@@ -59,17 +59,22 @@ export default function ViewGroup({navigation,route}){
                     singers+=", "
                 }
             }
-            setArtists(singers)
+            artists.current = singers
             return r.data.item.album.images[0]
 
-        }).catch(err=>console.log(err,token))
+        }).catch( err => {
+            console.log(err, "Sdfsf")
+        })
+    }
+    function changePlayingState(){
+        isPlaying.current = !isPlaying.current
     }
     function timeout(delay: number) {
         return new Promise( res => setTimeout(res, delay) );
     }
     async function triggerAlert() {
         setAlert(true)
-        await timeout(3000);
+        await timeout(1000);
         setAlert(false)
     }
     const renderItem = ({item}) => {
@@ -81,33 +86,32 @@ export default function ViewGroup({navigation,route}){
             </TouchableOpacity>
         );
     };
-    const dequeue = async (item) => {
-        await triggerAlert()
-        await axios.put("http://" + api + `/group/dequeue`, {
-            params: {
-                groupID: group._id,
-            }
-        }).then(r=>{
-            const {song} = r.data
-            console.log(song)
-        })
-    }
+
+    useEffect(() => {
+
+            //console.log("THER",newSong.current)
+
+        if(newSong.current){
+            getCurrentSong(token).then(r=>{
+                console.log("Again")
+                setText("sa")
+            }).catch(e=>console.log("bad",e,token))
+        }
+        const interval = setInterval(() => {
+                getCurrentSong(token).then(r=>{
+                    console.log("Getting Song")
+                }).catch(e=>console.log("bad",e,token))
+
+        }, 2000);
+        return () => clearInterval(interval);
+    }, []);
+
     const enqueue = async (item) => {
         await triggerAlert()
-        await axios.put("http://" + api + `/group/enqueue`, {
-            params: {
-                groupID: group._id,
-                song: {
-                    name: item.name,
-                    artist: item.artist,
-                    uri: item.uri,
-                    image: item.image
-                }
-            }
-        })
+        await addToPlaybackQueue(token,item.uri)
     }
     const addToPlaybackQueue = async (token,uri) => {
-        const url = `https://api.spotify.com/v1/me/player/queue?uri=spotify:track:0pqnGHJpmpxLKifKRmU6WP`
+        const url = `https://api.spotify.com/v1/me/player/queue?uri=${uri}`
 
         await axios.post(url, null,{
             headers: {
@@ -138,44 +142,44 @@ export default function ViewGroup({navigation,route}){
                 trackList.push(map)
             }
             setTracks(trackList)
-            console.log(trackList)
-        }).catch(e=>console.log(e,"Errrr"))}
+        }).catch(e=>console.log(e,"Errr"))}
     function musicBox() {
-        if(currSong){
-            if(isPlaying){
+        if(currSong.current){
+            if(isPlaying.current){
                 return(
                     <View>
-                        <TouchableOpacity style={styles.musicBox} onPress={()=>navigation.navigate("ViewQueue",{group})}>
+                        <TouchableOpacity style={styles.musicBox} onPress={()=>navigation.navigate("ViewQueue",{token})}>
 
                             <View style={styles.row}>
-                                <Image  source={{uri: image}}
+                                <Image  source={{uri: image.current}}
                                         style={{width: 50, height: 60, opacity: 0.8, left: 5,top: 5}}/>
                                 <View style={styles.textContainer}>
-                                    <Text style={styles.text}>{songName}</Text>
-                                    <Text style={styles.artistText}>{artists}</Text>
+                                    <Text style={styles.text}>{songName.current}</Text>
+                                    <Text style={styles.artistText}>{artists.current}</Text>
                                 </View>
                             </View>
-                            <TouchableOpacity onPress={()=>setIsPlaying(!isPlaying)}>
+                            <TouchableOpacity onPress={()=>changePlayingState()}>
                                 <Ionicons name={"pause-outline"}  color={"#fff"} size={35} style={styles.icon}/>
                             </TouchableOpacity>
 
                         </TouchableOpacity>
-                        <ProgressBar progress={time && progress? progress/time: 0} width={width/2} height={5} color={"#fff"} style={styles.progress}/>
+                        <ProgressBar progress={time.current && progressRef.current? progressRef.current/time.current: 0} width={width/2} height={5} color={"#fff"} style={styles.progress}/>
                     </View>)
             }
             else{
+
                 return(
-                    <TouchableOpacity  style={styles.musicBox} onPress={()=>navigation.navigate("ViewQueue",{group})}>
+                    <TouchableOpacity  style={styles.musicBox} onPress={()=>navigation.navigate("ViewQueue",{token})}>
 
                         <View style={styles.row}>
-                            <Image  source={{uri: image}}
+                            <Image  source={{uri: image.current}}
                                     style={{width: 50, height: 60, opacity: 0.8, left: 5,top: 5}}/>
                             <View style={styles.textContainer}>
-                                <Text style={styles.text}>{songName}</Text>
-                                <Text style={styles.artistText}>{artists}</Text>
+                                <Text style={styles.text}>{songName.current}</Text>
+                                <Text style={styles.artistText}>{artists.current}</Text>
                             </View>
                         </View>
-                        <TouchableOpacity onPress={()=>setIsPlaying(!isPlaying)}>
+                        <TouchableOpacity onPress={()=>changePlayingState()}>
                             <Ionicons name={"play-outline"}  color={"#fff"} size={35} style={styles.icon}/>
                         </TouchableOpacity>
                     </TouchableOpacity>
@@ -183,37 +187,17 @@ export default function ViewGroup({navigation,route}){
             }
         }
         else {
-            if(group.queue.length>0){
-                const song =group.queue[0]
-                return (
-                    <TouchableOpacity  style={styles.musicBox} onPress={()=>navigation.navigate("ViewQueue",{group})}>
-                        <View style={styles.row}>
-                            <Image  source={{uri: song.image}}
-                                    style={{width: 50, height: 60, opacity: 0.8, left: 5,top: 5}}/>
-                            <View style={styles.textContainer}>
-                                <Text style={styles.text}>{song.name}</Text>
-                                <Text style={styles.artistText}>{song.artist}</Text>
-                            </View>
-                        </View>
-                        <TouchableOpacity onPress={()=>setIsPlaying(!isPlaying)}>
-                            <Ionicons name={"play-outline"}  color={"#fff"} size={35} style={styles.icon}/>
-                        </TouchableOpacity>
-                    </TouchableOpacity>
-                )
-            }
-            else{
                 return(
-                    <TouchableOpacity  style={styles.musicBox} onPress={()=>navigation.navigate("ViewQueue",{group})}>
+                    <TouchableOpacity  style={styles.musicBox} onPress={()=>navigation.navigate("ViewQueue",{token})}>
 
                         <View style={styles.row}>
                             <Text style={styles.text2}>No song queued</Text>
                         </View>
-                        <TouchableOpacity onPress={()=>setIsPlaying(!isPlaying)}>
+                        <TouchableOpacity onPress={()=>changePlayingState()}>
                             <Ionicons name={"musical-notes-outline"}  color={"#9b9595"} size={35} style={styles.icon}/>
                         </TouchableOpacity>
                     </TouchableOpacity>
                 )
-            }
         }
     }
 
@@ -223,11 +207,10 @@ export default function ViewGroup({navigation,route}){
             <View style={styles.search} >
                 <TextField placeholder={"Search a song to add to queue"} text={"Search"} onChange={searchSong} icon={"search-outline"} token={token}/>
             </View>
-            <LongBtn text={"Add to queue"} click={()=>addToPlaybackQueue(token)}/>
             <FlatList
                 style={styles.flat}
                 data={tracks}
-                keyExtractor={item => item._id}
+                keyExtractor={item => item.uri}
                 renderItem={renderItem}/>
             {
                 alert?

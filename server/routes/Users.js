@@ -33,6 +33,11 @@ router.post("/login", async (req,res) =>{
     const token = jwt.sign({id: user._id}, "secret")
     res.json({token, username: user.username})
 })
+
+router.get("/get-all-users", async (req,res) =>{
+    const users = await userModel.find({})
+    res.json({users})
+})
 function generateRandomString(length) {
     let text = '';
     let possible = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';

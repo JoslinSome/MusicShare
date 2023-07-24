@@ -30,7 +30,7 @@ export default function HomePage({route, navigation}) {
         {
             responseType: ResponseType.Token,
             clientId: 'clientId',
-            scopes: ['user-read-email', 'streaming' ,'playlist-modify-public',"user-modify-playback-state","user-read-currently-playing"],
+            scopes: ['user-read-email', 'streaming',"user-read-playback-state" ,'playlist-modify-public',"user-modify-playback-state","user-read-currently-playing"],
             // In order to follow the "Authorization Code Flow" to fetch token after authorizationEndpoint
             // this must be set to false
             usePKCE: false,
@@ -40,26 +40,7 @@ export default function HomePage({route, navigation}) {
         },
         discovery
     );
-    React.useEffect(() => {
-        if (response?.type === 'success') {
-            const { access_token } = response.params;
-        }
-    }, [response]);
-    async function loadGroups(){
-        await axios.get("http://" + api + `/group/get-user-groups`, {
-            params: {
-               username: cookies.username
-            }
-        })
-            .then(r => {
-                setGroups(r.data)
-            })
-    }
-    useEffect( () => {
-        loadGroups()
-            .then(r => console.log())
-            .catch(err=> console.log())
-    }, );
+
     const renderItem = ({item}) => {
 
         return (
@@ -74,18 +55,7 @@ export default function HomePage({route, navigation}) {
         );
     };
     if(token){
-        return(
-            <View style={styles.container}>
-                <FlatList
-                    style={styles.flat}
-                    data={groups}
-                    keyExtractor={item => item._id}
-                    renderItem={renderItem}/>
-                <View style={styles.btn}>
-                    <IconButton onPress={()=> navigation.navigate("CreateGroup")} icon={"headset-outline"} />
-                </View >
-            </View>
-        )}
+        navigation.navigate("ViewGroup",{token})}
     else{
         return (
             <View style={styles.container2}>
