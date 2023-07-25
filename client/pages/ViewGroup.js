@@ -17,215 +17,78 @@ import {api} from "../config/Api";
 import * as querystring from "querystring";
 
 export default function ViewGroup({navigation,route}){
-    const [text, setText] = useState("")
-    const [tracks, setTracks] = useState({})
-    const {token} = route.params
-    const [alert, setAlert] = useState(false)
-    const currSong = useRef(true)
-    const image = useRef(null);
-    const isPlaying = useRef(false);
-    const songName = useRef("");
-    const time = useRef();
-    const [progress,setProgress] = useState();
-    const artists = useRef("");
-    const newSong = useRef(true);
-    const [times, setTimes] = useState(new Date());
-    const progressRef = useRef();
-    const getCurrentSong = async (token) => {
-
-        await axios.get("https://api.spotify.com/v1/me/player/currently-playing", {
-            headers: {
-                'Authorization': `Bearer ${token}`,
-            },
-        }).then(r=> {
-            //const res = JSON.parse(r)]
-
-            if(!r){
-                return null
-            }
-            newSong.current =false
-            progressRef.current=r.data.progress_ms
-            setProgress(r.data.progress_ms)
-            currSong.current= r.data.item
-            image.current = r.data.item.album.images[0].url
-            isPlaying.current = r.data.is_playing
-            console.log(r.data.is_playing, "PLAYING?",isPlaying.current)
-            songName.current =r.data.item.name
-            time.current=r.data.item.duration_ms
-            let singers = ""
-            for (let i = 0; i < r.data.item.artists.length; i++) {
-                singers+= r.data.item.artists[i].name
-                if(i<r.data.item.artists.length-1){
-                    singers+=", "
-                }
-            }
-            artists.current = singers
-            return r.data.item.album.images[0]
-
-        }).catch( err => {
-            console.log(err, "Sdfsf")
-        })
+    const {notifications} = route.params
+    const DATA = [{val: "J"},{val: "V"},{val: "S"},{val: "W"},{val: "H"},{val: "O"},{val: "M"},{val: "X"},{val: "P"},{val: "J"},{val: "G"},{val: "J"}]
+    const DATA2 =[{val: "J"}]
+    function renderData({item}){
+        return(
+            <View style={styles.circle}>
+                <Text>{item.val}</Text>
+            </View>
+        )
     }
-    function changePlayingState(){
-        isPlaying.current = !isPlaying.current
-    }
-    function timeout(delay: number) {
-        return new Promise( res => setTimeout(res, delay) );
-    }
-    async function triggerAlert() {
-        setAlert(true)
-        await timeout(1000);
-        setAlert(false)
-    }
-    const renderItem = ({item}) => {
+    function renderNotificationData({item}){
         return (
-            <TouchableOpacity style={styles.list} onPress={()=>enqueue(item)}>
-                <List.Section>
-                    <List.Item style={styles.listItem} descriptionStyle={styles.artistText} description={item.artist}  titleStyle={styles.text} title={item.name} right={() => <Ionicons style={{top:10}} name={"add-circle-outline"} color={"#fff"} size={40}/>} left={() => <Image style={{width: 50, height: 60, opacity: 0.8, left: 5,top: 5}} source={{uri: item.image}}/>}/>
-                </List.Section>
-            </TouchableOpacity>
-        );
-    };
-
-    useEffect(() => {
-
-            //console.log("THER",newSong.current)
-
-        if(newSong.current){
-            getCurrentSong(token).then(r=>{
-                console.log("Again")
-                setText("sa")
-            }).catch(e=>console.log("bad",e,token))
-        }
-        const interval = setInterval(() => {
-                getCurrentSong(token).then(r=>{
-                    console.log("Getting Song")
-                }).catch(e=>console.log("bad",e,token))
-
-        }, 2000);
-        return () => clearInterval(interval);
-    }, []);
-
-    const enqueue = async (item) => {
-        await triggerAlert()
-        await addToPlaybackQueue(token,item.uri)
-    }
-    const addToPlaybackQueue = async (token,uri) => {
-        const url = `https://api.spotify.com/v1/me/player/queue?uri=${uri}`
-
-        await axios.post(url, null,{
-            headers: {
-                'Authorization': `Bearer ${token}`,
-            }}).then(r=>console.log("SONG QUEUED")).catch(e=>console.log(e,"Song not queued"))
-    }
-    const searchSong = async (token,text) => {
-
-        await axios.get("https://api.spotify.com/v1/search", {
-            headers: {
-                'Authorization': `Bearer ${token}`,
-            },
-            params: {
-                q: text,
-                type: "track",
-                limit: 15
-            }
-        }).then(r=>{
-            let trackList = []
-           // console.log(r.data.tracks.items[0].album.images[0].url)
-            for (let i = 0; i < r.data.tracks.items.length; i++) {
-                const map = {
-                    name: r.data.tracks.items[i].name,
-                    artist: r.data.tracks.items[i].artists[0].name,
-                    uri: r.data.tracks.items[i].uri,
-                    image: r.data.tracks.items[i].album.images[0].url
-                }
-                trackList.push(map)
-            }
-            setTracks(trackList)
-        }).catch(e=>console.log(e,"Errr"))}
-    function musicBox() {
-        if(currSong.current){
-            if(isPlaying.current){
-                return(
-                    <View>
-                        <TouchableOpacity style={styles.musicBox} onPress={()=>navigation.navigate("ViewQueue",{token})}>
-
-                            <View style={styles.row}>
-                                <Image  source={{uri: image.current}}
-                                        style={{width: 50, height: 60, opacity: 0.8, left: 5,top: 5}}/>
-                                <View style={styles.textContainer}>
-                                    <Text style={styles.text}>{songName.current}</Text>
-                                    <Text style={styles.artistText}>{artists.current}</Text>
-                                </View>
-                            </View>
-                            <TouchableOpacity onPress={()=>changePlayingState()}>
-                                <Ionicons name={"pause-outline"}  color={"#fff"} size={35} style={styles.icon}/>
-                            </TouchableOpacity>
-
+            <View style={styles.vList}>
+                <View style={styles.row}>
+                    <View style={styles.circle}>
+                        <Text>{item.val}</Text>
+                    </View>
+                <View>
+                    <Text style={styles.text}>{item.sender} invited you</Text>
+                    <View style={styles.row}>
+                        <TouchableOpacity style={styles.btn}>
+                            <Text style={styles.text2} >Join</Text>
                         </TouchableOpacity>
-                        <ProgressBar progress={time.current && progressRef.current? progressRef.current/time.current: 0} width={width/2} height={5} color={"#fff"} style={styles.progress}/>
-                    </View>)
-            }
-            else{
-
-                return(
-                    <TouchableOpacity  style={styles.musicBox} onPress={()=>navigation.navigate("ViewQueue",{token})}>
-
-                        <View style={styles.row}>
-                            <Image  source={{uri: image.current}}
-                                    style={{width: 50, height: 60, opacity: 0.8, left: 5,top: 5}}/>
-                            <View style={styles.textContainer}>
-                                <Text style={styles.text}>{songName.current}</Text>
-                                <Text style={styles.artistText}>{artists.current}</Text>
-                            </View>
-                        </View>
-                        <TouchableOpacity onPress={()=>changePlayingState()}>
-                            <Ionicons name={"play-outline"}  color={"#fff"} size={35} style={styles.icon}/>
+                        <TouchableOpacity style={styles.btn2}>
+                            <Text style={styles.text2} >Delete</Text>
                         </TouchableOpacity>
-                    </TouchableOpacity>
-                )
-            }
-        }
-        else {
-                return(
-                    <TouchableOpacity  style={styles.musicBox} onPress={()=>navigation.navigate("ViewQueue",{token})}>
+                    </View>
+                </View>
 
-                        <View style={styles.row}>
-                            <Text style={styles.text2}>No song queued</Text>
-                        </View>
-                        <TouchableOpacity onPress={()=>changePlayingState()}>
-                            <Ionicons name={"musical-notes-outline"}  color={"#9b9595"} size={35} style={styles.icon}/>
-                        </TouchableOpacity>
-                    </TouchableOpacity>
-                )
-        }
+                </View>
+
+            </View>
+        )
     }
-
     return(
         <View style={styles.container}>
-            <Text style={styles.title}>Add to queue</Text>
-            <View style={styles.search} >
-                <TextField placeholder={"Search a song to add to queue"} text={"Search"} onChange={searchSong} icon={"search-outline"} token={token}/>
+            <View style={styles.owner}>
+                <Text style={styles.text}>Group Owner</Text>
+                <FlatList
+                    style={styles.list}
+                    horizontal={true}
+                    data={DATA2}
+                    renderItem={renderData}
+                    keyExtractor={(item) => item.id}
+                />
             </View>
-            <FlatList
-                style={styles.flat}
-                data={tracks}
-                keyExtractor={item => item.uri}
-                renderItem={renderItem}/>
-            {
-                alert?
-                    <View style={styles.alert}>
-                        <Alert text={"Song added to queue"}/>
-                    </View>
-                    :null
-            }
+            <View style={styles.members}>
+                <Text style={styles.text}>Group members</Text>
+                <FlatList
+                    horizontal={true}
+                    data={DATA}
+                    renderItem={renderData}
+                    keyExtractor={(item) => item.id}
+                />
+            </View>
+            <View style={styles.notifs}>
+                <Text style={styles.text}>Notifications</Text>
+                <FlatList
+                    data={notifications}
+                    renderItem={renderNotificationData}
+                    keyExtractor={(item) => item.id}
+                />
+            </View>
 
-                {musicBox()}
         </View>
     )
 }
 
 const styles = StyleSheet.create({
+    vList: {
+        marginBottom: 30
+    },
     container: {
         flex: 1,
         backgroundColor: '#121b22',
@@ -234,17 +97,58 @@ const styles = StyleSheet.create({
     search: {
         marginTop: -20
     },
-
+    notifs: {
+        width: "100%",
+        height: '55%'
+    },
+    btn: {
+        backgroundColor: "#184bbe",
+        alignItems: "center",
+        width: 80,
+        height: 30,
+        justifyContent: "center",
+        marginLeft: 12,
+        borderRadius: 5
+    },
+    btn2: {
+        backgroundColor: "#be1844",
+        alignItems: "center",
+        width: 80,
+        height: 30,
+        justifyContent: "center",
+        marginLeft: 12,
+        borderRadius: 5
+    },
     musicBox: {
         backgroundColor: 'rgba(42,78,107,0.68)',
         width: "100%",
         height: 70,
         flexDirection: "row"
     },
+    owner: {
+        height: "22%",
+        borderBottomWidth: StyleSheet.hairlineWidth,
+        borderBottomColor: "white",
+        width: "100%"
+    },
+    members: {
+        height: "22%",
+        borderBottomWidth: StyleSheet.hairlineWidth,
+        borderBottomColor: "white"
+    },
     flat: {
         height: "93%",
         flexGrow: 0,
         width: "100%"
+    },
+    circle: {
+        width: 60,
+        height: 60,
+        borderRadius: 50,
+        backgroundColor: "#fff",
+        margin: 8,
+        justifyContent: "center",
+        alignItems: "center"
     },
     progress: {
         left: 16
@@ -266,8 +170,13 @@ const styles = StyleSheet.create({
         color: "white",
         fontWeight: "bold",
         fontSize: 16,
-        marginLeft: 20,
-        marginTop: 10
+        marginTop: 10,
+        right: -10,
+        marginBottom:20
+    },
+    text2: {
+        color: "white",
+        fontWeight: "bold",
     },
     artistText: {
         color: "#9b9595",
@@ -279,19 +188,9 @@ const styles = StyleSheet.create({
     row: {
         flexDirection: "row",
         width: '100%',
-        left: 20
+
     },
-    text2: {
-        flexDirection: "row",
-        width: '100%',
-        left: 20,
-        top: 20,
-        color: "#9b9595",
-        fontWeight: "bold",
-        fontSize: 20,
-        marginLeft: 20,
-        fontStyle: "italic"
-    },
+
     desc: {
         color: "rgba(112,107,107,0.86)",
         fontStyle: "italic",
@@ -303,7 +202,7 @@ const styles = StyleSheet.create({
     },
     list: {
         backgroundColor: '#121b22',
-        width: '100%',
+        width: '70%',
     },
     item: {
         padding: 20,

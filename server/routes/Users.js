@@ -3,6 +3,7 @@ import jwt from "jsonwebtoken"
 import bcrypt from "bcrypt"
 import express from "express";
 import * as querystring from "querystring";
+import {groupsModel} from "../models/Groups.js";
 
 const router = express.Router()
 
@@ -14,7 +15,12 @@ router.post("/register", async  (req,res)=>{
         return res.json({message: "User already exists"})
     }
     const hashedPassword = await bcrypt.hash(password,10)
+    const group = new groupsModel({name: "group"})
+
     const newUser =new userModel({username,password: hashedPassword,firstname,lastname})
+    group.users.push(newUser._id)
+    await group.save()
+    newUser.group = group._id
     await newUser.save().then(r=>{})
     res.json({message: "User successfully created"})
 })
