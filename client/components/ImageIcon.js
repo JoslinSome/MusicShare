@@ -10,7 +10,7 @@ export default function ImageIcon({size}) {
 
             <View>
                 <View style={styles.container}>
-                    <Ionicons style={styles.icon} name="camera-outline" size={40} color={"#c6bce0"}/>
+                    <Ionicons style={styles.icon} name="person-outline" size={70} color={"#c6bce0"}/>
                 </View>
                 <View style={styles.icon2}>
                     <Ionicons style={styles.icon3} name="add-outline" size={35} color={"#1616c0"}/>
@@ -30,8 +30,8 @@ export default function ImageIcon({size}) {
 
 const styles =StyleSheet.create({
     container: {
-        width: 80,
-        height: 80,
+        width: 130,
+        height: 130,
         borderColor: titleColor,
         borderWidth:2,
         justifyContent: "center",
@@ -42,16 +42,15 @@ const styles =StyleSheet.create({
     },
     icon2:{
         backgroundColor: "rgb(255,255,255)",
-        width: 30,
-        height: 30,
+        width: 40,
+        height: 40,
         borderRadius: 100,
-        top: -25,
-        right: -50
+        top: -35,
+        right: -80,
+        alignItems: "center",
+        justifyContent: "center"
     },
-    icon3: {
-        bottom: 3,
-        right: 1
-    },
+
     icon: {
         alignSelf: "center"
     }

@@ -44,6 +44,15 @@ router.get("/get-all-users", async (req,res) =>{
     const users = await userModel.find({})
     res.json({users})
 })
+
+router.get("/get-user-by-name", async (req,res) =>{
+    const {username} = req.query
+    const user = await userModel.find({username})
+    if(!user){
+        return res.json({message: "Invalid user"})
+    }
+    res.json({user})
+})
 function generateRandomString(length) {
     let text = '';
     let possible = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
