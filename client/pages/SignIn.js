@@ -26,9 +26,9 @@ export default function SignIn({navigation}){
                 else{
                     setCookie("access-token",r.data.token)
                     setCookie("username",r.data.username)
-                    console.log(r.data)
+                    console.log(r.data,"jkhjkh")
                     //window.localStorage.setItem("userId",r.data.userId)
-                    navigation.navigate('Home')
+                    navigation.navigate('Home',{user: r.data.user})
                 }
 
             })

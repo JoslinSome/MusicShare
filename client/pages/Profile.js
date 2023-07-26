@@ -9,7 +9,7 @@ import {useState} from "react";
 
 export default function Profile() {
     const [cookies,setCookies] = useCookies(['access-token',"username"])
-    const [user, setUser] = useState();
+    const [user, setUser] = useState({});
     getUserByName().then(r => console.log("") )
     async function getUserByName() {
         await axios.get("http://" + api + `/auth/get-user-by-name`,{

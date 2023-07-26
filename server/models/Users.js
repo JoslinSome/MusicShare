@@ -7,7 +7,8 @@ const UserSchema = new mongoose.Schema({
     lastname: {type: String, required: true},
     friends: [{ type : mongoose.Schema.Types.ObjectId, ref: 'users' }],
     requests: [{ type : mongoose.Schema.Types.ObjectId, ref: 'requests' }],
-    group: { type : mongoose.Schema.Types.ObjectId, ref: 'groups' }
+    group: { type : mongoose.Schema.Types.ObjectId, ref: 'groups' },
+    initialGroup: { type : mongoose.Schema.Types.ObjectId, ref: 'groups' }
 })
 
 export const userModel = mongoose.model("users",UserSchema)

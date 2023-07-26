@@ -99,4 +99,17 @@ router.get("/get-group", async (req,res) => {
     res.json(group)
 })
 
+router.get("/get-group-members", async (req,res) => {
+    const {groupID} = req.query
+    const group = await groupsModel.findById(groupID)
+    let result = []
+    if(!group){
+        return res.send({message: "Group not found"})
+    }
+    for (let i = 0; i < group.users.length; i++) {
+        result.push(await userModel.findById(group.users[i]._id))
+    }
+    res.json(result)
+})
+
 export {router as GroupRouter}

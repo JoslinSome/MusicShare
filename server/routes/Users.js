@@ -19,12 +19,13 @@ router.post("/register", async  (req,res)=>{
 
     const newUser =new userModel({username,password: hashedPassword,firstname,lastname})
     group.users.push(newUser._id)
+    group.owner = username
     await group.save()
     newUser.group = group._id
+    newUser.initialGroup = group._id
     await newUser.save().then(r=>{})
     res.json({message: "User successfully created"})
 })
-
 // Login Api
 router.post("/login", async (req,res) =>{
     const {username, password} = req.body
@@ -37,7 +38,7 @@ router.post("/login", async (req,res) =>{
         return res.json({message: "Username or Password incorrect"})
     }
     const token = jwt.sign({id: user._id}, "secret")
-    res.json({token, username: user.username})
+    res.json({token, username: user.username,user})
 })
 
 router.get("/get-all-users", async (req,res) =>{
@@ -52,6 +53,14 @@ router.get("/get-user-by-name", async (req,res) =>{
         return res.json({message: "Invalid user"})
     }
     res.json({user})
+})
+router.get("/get-user-by-id", async (req,res) =>{
+    const {id} = req.query
+    const user = await userModel.findById(id)
+    if(!user){
+        return res.json({message: "Invalid user"})
+    }
+    res.json(user)
 })
 function generateRandomString(length) {
     let text = '';

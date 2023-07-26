@@ -26,8 +26,9 @@ const discovery = {
     tokenEndpoint: 'https://accounts.spotify.com/api/token',
 };
 export default function HomePage({route, navigation}) {
+
     const [cookies,setCookies] = useCookies(['access-token',"username"])
-    const [groups, setGroups] = useState()
+    const [group, setGroup] = useState({})
     const [token, setToken] = useState(null)
     const [text, setText] = useState("")
     const [tracks, setTracks] = useState({})
@@ -41,20 +42,53 @@ export default function HomePage({route, navigation}) {
     const [notifications, setNotifications] = useState()
     const artists = useRef("");
     const newSong = useRef(true);
+    const {user} = route.params
     const [times, setTimes] = useState(new Date());
     const progressRef = useRef();
+    const userRef = useRef();
+    const groupsRef = useRef();
 
+    getGroup().then(r => console.log("group got"))
+    async function getGroup(){
+        await axios.get("http://" + api + `/auth/get-user-by-name`,{
+            params: {
+                username: cookies.username
+            }
+        }).then(async r => {
+            userRef.current = r.data.user[0]
+            await axios.get("http://" + api + `/group/get-group`, {
+                params: {
+                    groupID: userRef.current.group
+                }
+            }).then(r=>{
+                groupsRef.current = r.data
+            }).catch(e=>console.log(""))
+        }).catch(e=>console.log(""))
+
+    }
     async function getRequests() {
         await axios.get("http://" + api + `/request/get-user-requests`,{
             params: {
                 username: cookies.username
             }
         }).then(r => {
-            console.log(r.data.length,"PEOPEOEPEOEPOEPEOEPOE")
             setNotifications(r.data)
         })
     }
-
+    const getRecommended = async (token) => {
+        await axios.get("https://api.spotify.com/v1/recommendations", {
+            headers: {
+                'Authorization': `Bearer ${token}`,
+            },
+            params: {
+                market: "ES",
+                limit: 10,
+                seed_genre: "classical,country"
+            }
+        }).then(r=> {
+            console.log(r.data,"DATAAA")
+        })
+    }
     const getCurrentSong = async (token) => {
 
         await axios.get("https://api.spotify.com/v1/me/player/currently-playing", {
@@ -73,7 +107,6 @@ export default function HomePage({route, navigation}) {
             currSong.current= r.data.item
             image.current = r.data.item.album.images[0].url
             isPlaying.current = r.data.is_playing
-            console.log(r.data.is_playing, "PLAYING?",isPlaying.current)
             songName.current =r.data.item.name
             time.current=r.data.item.duration_ms
             let singers = ""
@@ -114,11 +147,10 @@ export default function HomePage({route, navigation}) {
     useEffect(() => {
 
         //console.log("THER",newSong.current)
-
         if(newSong.current){
+
             getCurrentSong(token).then(r=>{
-                console.log("Again")
-                setText("sa")
+                console.log("")
             }).catch(e=>console.log("bad",e,token))
         }
         const interval = setInterval(() => {
@@ -126,6 +158,8 @@ export default function HomePage({route, navigation}) {
                 console.log("")
             }).catch(e=>console.log("bad",e,token))
             getRequests().then(r => console.log("done"))
+            getRecommended(token).then(r=>console.log("EEasdasdasdsaE")).catch(e=>console.log(e,"ERRROOOOR"))
+
 
 
         }, 2000);
@@ -185,7 +219,6 @@ export default function HomePage({route, navigation}) {
     );
     function musicBox() {
         if(currSong.current){
-            console.log("CURRSONGx")
             if(isPlaying.current){
                 return(
                     <View>
@@ -247,7 +280,6 @@ export default function HomePage({route, navigation}) {
             <View style={styles.container2}>
                 <LongBtn text="Log in to Spotify" click={() => {promptAsync().then(r => {
                     setToken(r.authentication.accessToken)
-                    console.log()
                 }).catch(e=>console.log())}}/>
                 <LongBtn text="Continue without Spotify"/>
             </View>
@@ -258,7 +290,7 @@ export default function HomePage({route, navigation}) {
                 <View style={styles.row2}>
                     <Text style={styles.title}>Add to queue</Text>
                     <View style={styles.iconBtn}>
-                        <IconButton onPress={()=>navigation.navigate('ViewGroup',{notifications})} notifications={true} value={notifications? notifications.length :0} icon={'notifications-outline'} noBorder={true} color={"#fff"}/>
+                        <IconButton onPress={()=>navigation.navigate('ViewGroup',{notifications, group: groupsRef.current,user:user})} notifications={true} value={notifications? notifications.length :0} icon={'notifications-outline'} noBorder={true} color={"#fff"}/>
                     </View>
                     <View style={styles.iconBtn}>
                         <IconButton icon={'settings-outline'} noBorder={true} color={"white"}/>

@@ -15,21 +15,132 @@ import ImageIcon from "../components/ImageIcon";
 import Alert from "../components/Alert"
 import {api} from "../config/Api";
 import * as querystring from "querystring";
+import {useCookies} from "react-cookie";
 
 export default function ViewGroup({navigation,route}){
-    const {notifications} = route.params
-    const DATA = [{val: "J"},{val: "V"},{val: "S"},{val: "W"},{val: "H"},{val: "O"},{val: "M"},{val: "X"},{val: "P"},{val: "J"},{val: "G"},{val: "J"}]
-    const DATA2 =[{val: "J"}]
+    const {notifications, group,user} = route.params
+    const [requests, setRequests] = useState(notifications)
+    const [cookies,setCookies] = useCookies(['access-token',"username"])
+    const [members, setMembers] = useState([])
+    const [alertText, setAlertText] = useState("")
+    const [userObj, setUserObj] = useState(user)
+    const [groupObj, setGroupObj] = useState(group);
+    const [owner, setOwner] = useState(groupObj.owner)
+    const [alert, setAlert] = useState(false)
+    const once = useRef();
+    const onceID = useRef();
+    once.current = true
+    onceID.current = true
+    //console.log(route.params,"GROOOUP")
+    SetGroupMembers().then(r => null)
+    async function SetGroupMembers() {
+        await axios.get("http://" + api + `/group/get-group-members`, {
+            params: {
+                groupID: groupObj._id
+            }
+        }).then(r=>{
+            if(once.current){
+                setMembers(r.data)
+                once.current= false
+            }
+        })
+
+    }
+    async function getGroup() {
+        await axios.get("http://" + api + `/group/get-group`, {
+            params: {
+                groupID: user.group
+            }
+        }).then(r=>{
+            console.log("HERE")
+            setGroupObj(r.data)
+        })
+    }
+    async function getRequests() {
+        await axios.get("http://" + api + `/request/get-user-requests`,{
+            params: {
+                username: cookies.username
+            }
+        }).then(r => {
+            setRequests(r.data)
+        })
+    }
+
+    function refresh(){
+        getUserById().then(r => null)
+        getRequests().then(r => null)
+        getGroup().then(r=>null)
+    }
+    async function getUserById() {
+        await axios.get("http://" + api + `/auth/get-user-by-id`,{
+            params: {
+                id: user._id
+            }
+        }).then(r => {
+                setUserObj(r.data)
+        })
+    }
+    async function joinInitialGroup(){
+        await axios.put("http://" + api + `/request/join-initial-group`,{
+            params: {
+                username: cookies.username
+            }
+        }).then(r => {
+            setAlertText("Group joined")
+            refresh()
+            triggerAlert()
+        }).catch(e=> console.log("Successfully joined"))
+    }
+    async function acceptRequest(sender) {
+        await axios.put("http://" + api + `/request/accept-request`,{
+            params: {
+                sender: sender,
+                username: cookies.username
+            }
+        }).then(r => {
+            setAlertText("Group joined")
+            refresh()
+            triggerAlert()
+        }).catch(e=> console.log("error rejceting request"))
+    }
+    async function rejectRequest(sender) {
+        await axios.put("http://" + api + `/request/refuse-request`,{
+            params: {
+                sender: sender,
+                username: cookies.username
+            }
+        }).then(r => {
+            refresh()
+            setAlertText("Request refused")
+            triggerAlert()
+        }).catch(e=> console.log("error rejceting request"))
+    }
     function renderData({item}){
+
         return(
             <View style={styles.circle}>
-                <Text>{item.val}</Text>
+                <Text>{owner}</Text>
             </View>
         )
     }
+    function renderData2({item}){
+        return(
+            <View style={styles.circle}>
+                <Text>{item.firstname || item.val}</Text>
+            </View>
+        )
+    }
+    async function triggerAlert() {
+        setAlert(true)
+        await timeout(1000);
+        setAlert(false)
+    }
+    function timeout(delay: number) {
+        return new Promise( res => setTimeout(res, delay) );
+    }
     function renderNotificationData({item}){
         return (
-            <View style={styles.vList}>
+            <TouchableOpacity style={styles.vList}>
                 <View style={styles.row}>
                     <View style={styles.circle}>
                         <Text>{item.val}</Text>
@@ -37,10 +148,10 @@ export default function ViewGroup({navigation,route}){
                 <View>
                     <Text style={styles.text}>{item.sender} invited you</Text>
                     <View style={styles.row}>
-                        <TouchableOpacity style={styles.btn}>
+                        <TouchableOpacity style={styles.btn} onPress={()=>acceptRequest(item.sender)}>
                             <Text style={styles.text2} >Join</Text>
                         </TouchableOpacity>
-                        <TouchableOpacity style={styles.btn2}>
+                        <TouchableOpacity style={styles.btn2} onPress={()=>rejectRequest(item.sender)}>
                             <Text style={styles.text2} >Delete</Text>
                         </TouchableOpacity>
                     </View>
@@ -48,7 +159,7 @@ export default function ViewGroup({navigation,route}){
 
                 </View>
 
-            </View>
+            </TouchableOpacity>
         )
     }
     return(
@@ -58,28 +169,58 @@ export default function ViewGroup({navigation,route}){
                 <FlatList
                     style={styles.list}
                     horizontal={true}
-                    data={DATA2}
+                    data={[groupObj]}
                     renderItem={renderData}
-                    keyExtractor={(item) => item.id}
+                    keyExtractor={(item) => item._id}
                 />
             </View>
             <View style={styles.members}>
                 <Text style={styles.text}>Group members</Text>
                 <FlatList
                     horizontal={true}
-                    data={DATA}
-                    renderItem={renderData}
+                    data={members}
+                    renderItem={renderData2}
                     keyExtractor={(item) => item.id}
                 />
             </View>
             <View style={styles.notifs}>
-                <Text style={styles.text}>Notifications</Text>
+                <Text style={styles.text}>Invitations</Text>
+                {
+                    userObj.initialGroup !== userObj.group?
+                        <TouchableOpacity style={styles.vList}>
+                            <View style={styles.row}>
+                                <View style={styles.circle}>
+                                    <Text>{userObj.firstname}</Text>
+                                </View>
+                                <View>
+                                    <Text style={styles.text}>Re-join your group?</Text>
+                                    <View style={styles.row}>
+                                        <TouchableOpacity style={styles.btn} onPress={()=>joinInitialGroup()}>
+                                            <Text style={styles.text2}>Join</Text>
+                                        </TouchableOpacity>
+
+                                    </View>
+                                </View>
+
+                            </View>
+
+                        </TouchableOpacity>
+                        :null
+
+                }
                 <FlatList
-                    data={notifications}
+                    data={requests}
                     renderItem={renderNotificationData}
                     keyExtractor={(item) => item.id}
                 />
             </View>
+            {
+                alert?
+                    <View style={styles.alert}>
+                        <Alert text={alertText}/>
+                    </View>
+                    :null
+            }
 
         </View>
     )
@@ -134,7 +275,8 @@ const styles = StyleSheet.create({
     members: {
         height: "22%",
         borderBottomWidth: StyleSheet.hairlineWidth,
-        borderBottomColor: "white"
+        borderBottomColor: "white",
+        width: '100%'
     },
     flat: {
         height: "93%",
@@ -155,7 +297,7 @@ const styles = StyleSheet.create({
     },
     alert: {
         width: '97%',
-        marginBottom: 20
+        bottom: 60
     },
     textContainer: {
 
