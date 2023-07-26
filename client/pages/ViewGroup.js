@@ -24,36 +24,39 @@ export default function ViewGroup({navigation,route}){
     const [members, setMembers] = useState([])
     const [alertText, setAlertText] = useState("")
     const [userObj, setUserObj] = useState(user)
-    const [groupObj, setGroupObj] = useState(group);
-    const [owner, setOwner] = useState(groupObj.owner)
+    const [groupObj, setGroupObj] = useState({});
     const [alert, setAlert] = useState(false)
     const once = useRef();
-    const onceID = useRef();
+    const onceID = useRef(true);
+    const groupRef = useRef(groupObj);
+    const userRef = useRef(user);
     once.current = true
-    onceID.current = true
     //console.log(route.params,"GROOOUP")
-    SetGroupMembers().then(r => null)
+    if(onceID.current){
+        getGroup().then(r=>SetGroupMembers().then(r => null))
+        onceID.current = false
+    }
+
     async function SetGroupMembers() {
+
         await axios.get("http://" + api + `/group/get-group-members`, {
             params: {
-                groupID: groupObj._id
+                groupID: groupRef.current._id
             }
         }).then(r=>{
-            if(once.current){
+            console.log("MEEEMERS",r.data)
                 setMembers(r.data)
-                once.current= false
-            }
         })
-
     }
     async function getGroup() {
         await axios.get("http://" + api + `/group/get-group`, {
             params: {
-                groupID: user.group
+                groupID: userRef.current.group
             }
         }).then(r=>{
-            console.log("HERE")
             setGroupObj(r.data)
+            groupRef.current = r.data
+
         })
     }
     async function getRequests() {
@@ -67,9 +70,9 @@ export default function ViewGroup({navigation,route}){
     }
 
     function refresh(){
-        getUserById().then(r => null)
+        getUserById().then(r => getGroup().then(r=>SetGroupMembers().then(r => null)))
         getRequests().then(r => null)
-        getGroup().then(r=>null)
+
     }
     async function getUserById() {
         await axios.get("http://" + api + `/auth/get-user-by-id`,{
@@ -78,6 +81,8 @@ export default function ViewGroup({navigation,route}){
             }
         }).then(r => {
                 setUserObj(r.data)
+                userRef.current=r.data
+
         })
     }
     async function joinInitialGroup(){
@@ -119,14 +124,14 @@ export default function ViewGroup({navigation,route}){
 
         return(
             <View style={styles.circle}>
-                <Text>{owner}</Text>
+                <Text>{groupObj.owner}</Text>
             </View>
         )
     }
     function renderData2({item}){
         return(
             <View style={styles.circle}>
-                <Text>{item.firstname || item.val}</Text>
+                <Text>{item.firstname || "S"}</Text>
             </View>
         )
     }
