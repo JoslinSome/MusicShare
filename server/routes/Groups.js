@@ -57,7 +57,7 @@ router.put("/dequeue", async (req,res) =>{
         return res.json({message: "Group does not exist"})
     }
     if(group.queue.length==0){
-        res.json({message: "No song queued"})
+       return res.json({message: "No song queued"})
     }
     const song =group.queue.shift()
     await group.save()

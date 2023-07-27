@@ -29,10 +29,14 @@ export default function HomePage({route, navigation}) {
 
     const [cookies,setCookies] = useCookies(['access-token',"username"])
     const [group, setGroup] = useState({})
-    const [token, setToken] = useState(null)
+    const [token, setToken] = useState()
     const [text, setText] = useState("")
     const [tracks, setTracks] = useState({})
     const [alert, setAlert] = useState(false)
+    const [noSpotify, setNoSpotify] = useState(false)
+    const [topTracks, setTopTracks] = useState()
+    const topTracksRef = useRef();
+    const recommendedRef =useRef()
     const currSong = useRef(true)
     const image = useRef(null);
     const isPlaying = useRef(false);
@@ -47,8 +51,10 @@ export default function HomePage({route, navigation}) {
     const progressRef = useRef();
     const userRef = useRef();
     const groupsRef = useRef();
+    const tokenRef = useRef();
+    const noSpotifyRef = useRef(noSpotify);
+    const once = useRef(true);
 
-    getGroup().then(r => console.log("group got"))
     async function getGroup(){
         await axios.get("http://" + api + `/auth/get-user-by-name`,{
             params: {
@@ -83,12 +89,24 @@ export default function HomePage({route, navigation}) {
             params: {
                 market: "ES",
                 limit: 10,
-                seed_genre: "classical,country"
+                seed_tracks: topTracksRef.current[0].id+","+topTracksRef.current[1].id+","+topTracksRef.current[2].id+","+topTracksRef.current[3].id+","+topTracksRef.current[4].id
             }
         }).then(r=> {
-            console.log(r.data,"DATAAA")
+            once.current = false
+            recommendedRef.current = r.data.tracks
+            console.log("ehhheheeiahdljsabdashjidnlsakh.dojin")
         })
     }
+    const getTopTracks = async () =>{
+        await axios.get("https://api.spotify.com/v1/me/top/tracks", {
+            headers: {
+                'Authorization': `Bearer ${token}`,
+            },
+        }).then(r=>{
+            topTracksRef.current = r.data.items
+        })
+    }
+    getTopTracks().then(r => once.current? getRecommended(token).then(r=>console.log("EEadasdadsaE")).catch(e=>console.log(e,noSpotifyRef.current)): null)
     const getCurrentSong = async (token) => {
 
         await axios.get("https://api.spotify.com/v1/me/player/currently-playing", {
@@ -120,7 +138,7 @@ export default function HomePage({route, navigation}) {
             return r.data.item.album.images[0]
 
         }).catch( err => {
-            console.log(err, "Sdfsf")
+            console.log()
         })
     }
     function changePlayingState(){
@@ -143,43 +161,118 @@ export default function HomePage({route, navigation}) {
             </TouchableOpacity>
         );
     };
+    const renderItem2 = ({item}) => {
+        const song = {
+            name: item.name,
+            image: item.album.images[0].url,
+            artist: item.artists[0].name,
+            uri: item.uri
+        }
+        return (
+            <TouchableOpacity style={styles.list2} onPress={()=>enqueue(song)}>
+                <Image source={{uri: item.album.images[0].url}} style={{width: '100%', height: '100%', opacity: 0.8}}/>
+                <Text style={styles.text}>{item.name}</Text>
+            </TouchableOpacity>
+        );
+    };
 
     useEffect(() => {
-
         //console.log("THER",newSong.current)
-        if(newSong.current){
 
+        if(newSong.current && !noSpotifyRef.current){
             getCurrentSong(token).then(r=>{
                 console.log("")
             }).catch(e=>console.log("bad",e,token))
         }
         const interval = setInterval(() => {
-            getCurrentSong(token).then(r=>{
-                console.log("")
-            }).catch(e=>console.log("bad",e,token))
-            getRequests().then(r => console.log("done"))
-            getRecommended(token).then(r=>console.log("EEasdasdasdsaE")).catch(e=>console.log(e,"ERRROOOOR"))
+            if(!noSpotifyRef.current){
+                getCurrentSong(token).then(r=>{
+                    console.log("")
+                }).catch(e=>console.log("bad",e,token))
+            }
 
+            getRequests().then(r => console.log("done"))
+            getGroup().then(r =>  groupsRef.current.owner===cookies.username? addToPlaybackQueue(tokenRef.current).then(r =>null): console.lo)
 
 
         }, 2000);
         return () => clearInterval(interval);
+
     }, []);
 
     const enqueue = async (item) => {
         await triggerAlert()
-        await addToPlaybackQueue(token,item.uri)
+        addToMongoQueue(item).then(r=>null)
+       // await addToPlaybackQueue(token,item)
     }
-    const addToPlaybackQueue = async (token,uri) => {
-        const url = `https://api.spotify.com/v1/me/player/queue?uri=${uri}`
 
-        await axios.post(url, null,{
-            headers: {
-                'Authorization': `Bearer ${token}`,
-            }}).then(r=>console.log("SONG QUEUED")).catch(e=>console.log(e,"Song not queued"))
+    async function addToMongoQueue(item){
+        await axios.put("http://" + api + `/group/enqueue`,{
+            params: {
+                song: item,
+                groupID: groupsRef.current._id
+            }
+        }).then(r=>console.log(r.data,"<DDAADA"))
+    }
+    async function dequeue(){
+        await axios.put("http://" + api + `/group/dequeue`,{
+            params: {
+                groupID: groupsRef.current._id
+            }
+        }).then(r=>console.log(r.data.name,"Deleted"))
+    }
+    const addToPlaybackQueue = async (token) => {
+
+        for (let i = 0; i < groupsRef.current.queue.length; i++) {
+            let item = groupsRef.current.queue[i]
+            console.log(item,"ITEEEM",i)
+            if(item.uri) {
+                const url = `https://api.spotify.com/v1/me/player/queue?uri=${item.uri}`
+
+                await axios.post(url, null, {
+                        headers: {
+                            'Authorization': `Bearer ${token}`,
+                        }
+                    }
+                ).then(r => {
+
+                    console.log(item.name, " QUEUED")
+                    dequeue().then(r => null)
+                }).catch(e => console.log(e, "Song not queued"))
+
+            }
+            else{
+                await axios.get("https://api.spotify.com/v1/search", {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                    },
+                    params: {
+                        q: item.name,
+                        type: "track",
+                        limit: 1
+                    }
+                })
+                .then(async r => {
+                    const uri = r.data.tracks.items[i].uri
+                    const url = `https://api.spotify.com/v1/me/player/queue?uri=${uri}`
+
+                    await axios.post(url, null, {
+                            headers: {
+                                'Authorization': `Bearer ${token}`,
+                            }
+                        }
+                    ).then(r => {
+
+                        console.log(item.name, " QUEUED")
+                        dequeue().then(r => null)
+                    }).catch(e => console.log(e, "Song not queued"))
+                })
+            }
+
+        }
     }
     const searchSong = async (token,text) => {
-
+        setText(text)
         await axios.get("https://api.spotify.com/v1/search", {
             headers: {
                 'Authorization': `Bearer ${token}`,
@@ -206,8 +299,8 @@ export default function HomePage({route, navigation}) {
     const [request, response, promptAsync] = useAuthRequest(
         {
             responseType: ResponseType.Token,
-            clientId: 'clientId',
-            scopes: ['user-read-email', 'streaming',"user-read-playback-state" ,'playlist-modify-public',"user-modify-playback-state","user-read-currently-playing"],
+            clientId: 'userId',
+            scopes: ['user-top-read','user-read-email', 'streaming',"user-read-playback-state" ,'playlist-modify-public',"user-modify-playback-state","user-read-currently-playing"],
             // In order to follow the "Authorization Code Flow" to fetch token after authorizationEndpoint
             // this must be set to false
             usePKCE: false,
@@ -217,8 +310,22 @@ export default function HomePage({route, navigation}) {
         },
         discovery
     );
+
     function musicBox() {
-        if(currSong.current){
+        if(noSpotifyRef.current){
+            return (
+                <TouchableOpacity style={styles.musicBox} onPress={()=>null}>
+
+                    <View style={styles.row}>
+                        <View style={styles.textContainer}>
+                            <Text style={styles.text}></Text>
+                            <Text style={styles.artistText2}>Connect to spotify premium for more</Text>
+                        </View>
+                    </View>
+
+                </TouchableOpacity>
+            )
+        }
             if(isPlaying.current){
                 return(
                     <View>
@@ -240,26 +347,8 @@ export default function HomePage({route, navigation}) {
                         <ProgressBar progress={time.current && progressRef.current? progressRef.current/time.current: 0} width={width/2} height={5} color={"#fff"} style={styles.progress}/>
                     </View>)
             }
-            else{
 
-                return(
-                    <TouchableOpacity  style={styles.musicBox} onPress={()=>navigation.navigate("ViewQueue",{token})}>
 
-                        <View style={styles.row}>
-                            <Image  source={{uri: image.current}}
-                                    style={{width: 50, height: 60, opacity: 0.8, left: 5,top: 5}}/>
-                            <View style={styles.textContainer}>
-                                <Text style={styles.text}>{songName.current}</Text>
-                                <Text style={styles.artistText}>{artists.current}</Text>
-                            </View>
-                        </View>
-                        <TouchableOpacity onPress={()=>changePlayingState()}>
-                            <Ionicons name={"play-outline"}  color={"#fff"} size={35} style={styles.icon}/>
-                        </TouchableOpacity>
-                    </TouchableOpacity>
-                )
-            }
-        }
         else {
             return(
                 <TouchableOpacity  style={styles.musicBox} onPress={()=>navigation.navigate("ViewQueue",{token})}>
@@ -276,21 +365,64 @@ export default function HomePage({route, navigation}) {
     }
 
     if(!token){
-        return (
-            <View style={styles.container2}>
-                <LongBtn text="Log in to Spotify" click={() => {promptAsync().then(r => {
-                    setToken(r.authentication.accessToken)
-                }).catch(e=>console.log())}}/>
-                <LongBtn text="Continue without Spotify"/>
-            </View>
-        )}
+        if(!noSpotify){
+            return (
+                <View style={styles.container2}>
+                    <LongBtn text="Log in to Spotify" click={() => {promptAsync().then(r => {
+                        setToken(r.authentication.accessToken)
+                        tokenRef.current =  r.authentication.accessToken
+                    }).catch(e=>console.log())}}/>
+                    <LongBtn text="Continue without Spotify" click={()=>{
+                        setNoSpotify(true)
+                        noSpotifyRef.current = true
+                    }}/>
+                </View>
+            )
+        }
+        else{
+            return(
+                <View style={styles.container}>
+                    <View style={styles.row2}>
+                        <Text style={styles.title}>Add to queue</Text>
+                        <View style={styles.iconBtn}>
+                            <IconButton onPress={()=>navigation.navigate('ViewGroup',{notifications, group: groupsRef.current,user:userRef.current})} notifications={true} value={notifications? notifications.length :0} icon={'settings-outline'} noBorder={true} color={"#fff"}/>
+                        </View>
+                    </View>
+                    <View style={styles.search2} >
+                        <TextField placeholder={"Type a song name to add to queue"} text={"Search"} onChange={setText} icon={"search-outline"} token={token}/>
+                    </View>
+                    <View style={styles.noSpotifyBtn}>
+                        <LongBtn text={"Add to queue"} propWidth={true} click={()=>enqueue({name: text})}/>
+                    </View>
+
+                    <FlatList
+                        style={styles.flat}
+                        data={tracks}
+                        keyExtractor={item => item.uri}
+                        renderItem={renderItem}/>
+
+
+                    {
+                        alert?
+                            <View style={styles.alert}>
+                                <Alert text={"Song added to queue"}/>
+                            </View>
+                            :null
+                    }
+
+                    {musicBox()}
+                </View>
+            )
+        }
+
+    }
     else{
         return (
             <View style={styles.container}>
                 <View style={styles.row2}>
                     <Text style={styles.title}>Add to queue</Text>
                     <View style={styles.iconBtn}>
-                        <IconButton onPress={()=>navigation.navigate('ViewGroup',{notifications, group: groupsRef.current,user:user})} notifications={true} value={notifications? notifications.length :0} icon={'notifications-outline'} noBorder={true} color={"#fff"}/>
+                        <IconButton onPress={()=>navigation.navigate('ViewGroup',{notifications, group: groupsRef.current,user:userRef.current})} notifications={true} value={notifications? notifications.length :0} icon={'settings-outline'} noBorder={true} color={"#fff"}/>
                     </View>
                     <View style={styles.iconBtn}>
                         <IconButton icon={'settings-outline'} noBorder={true} color={"white"}/>
@@ -299,12 +431,32 @@ export default function HomePage({route, navigation}) {
                 <View style={styles.search} >
                     <TextField placeholder={"Search a song to add to queue"} text={"Search"} onChange={searchSong} icon={"search-outline"} token={token}/>
                 </View>
+                {
+                    text.length>0?
+                        <FlatList
+                            style={styles.flat}
+                            data={tracks}
+                            keyExtractor={item => item.uri}
+                            renderItem={renderItem}/>
+                        :<>
+                            <Text style={styles.text3}>Your Faves!</Text>
+                            <FlatList
+                                style={styles.flat2}
+                                data={topTracksRef.current}
+                                keyExtractor={item => item.uri}
+                                renderItem={renderItem2}
+                                horizontal={true}/>
+                            <Text style={styles.text3}>Reccomendations</Text>
+                            <FlatList
+                                style={styles.flat2}
+                                data={recommendedRef.current}
+                                keyExtractor={item => item.uri}
+                                renderItem={renderItem2}
+                                horizontal={true}/>
+                        </>
 
-                <FlatList
-                    style={styles.flat}
-                    data={tracks}
-                    keyExtractor={item => item.uri}
-                    renderItem={renderItem}/>
+                }
+
                 {
                     alert?
                         <View style={styles.alert}>
@@ -328,9 +480,15 @@ const styles = StyleSheet.create({
     },
     iconBtn: {
         marginTop: 20,
-        left: 100,
+        left: 160,
         paddingLeft: 15
 },
+    list2: {
+        width: 140,
+        height: 140,
+        marginLeft: 15,
+        backgroundColor: "#fff"
+    },
     btn: {
         bottom: 80,
         alignSelf: "flex-end",
@@ -345,17 +503,28 @@ const styles = StyleSheet.create({
     search: {
         marginTop: -20
     },
-
+    search2: {
+        marginTop: 0
+    },
     musicBox: {
         backgroundColor: 'rgba(42,78,107,0.46)',
         width: "100%",
         height: 120,
         flexDirection: "row"
     },
+    noSpotifyBtn: {
+        top: 30
+    },
     flat: {
         height: "93%",
         flexGrow: 0,
         width: "100%"
+    },
+    flat2: {
+        height: "93%",
+        flexGrow: 0,
+        width: "100%",
+        marginTop: 20
     },
     progress: {
         left: 16,
@@ -382,12 +551,29 @@ const styles = StyleSheet.create({
         marginLeft: 20,
         marginTop: 10
     },
+    text3: {
+        color: "white",
+        fontWeight: "bold",
+        fontSize: 16,
+        alignSelf: "flex-start",
+        marginTop: 10,
+        fontStyle: "italic",
+        left: 15
+    },
     artistText: {
         color: "#9b9595",
         fontWeight: "bold",
         fontSize: 16,
         marginLeft: 20,
         fontStyle: "italic"
+    },
+    artistText2: {
+        color: "#9b9595",
+        fontWeight: "bold",
+        fontSize: 16,
+        marginLeft: 20,
+        fontStyle: "italic",
+        marginTop: -13
     },
     row: {
         flexDirection: "row",

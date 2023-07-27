@@ -44,7 +44,6 @@ export default function ViewGroup({navigation,route}){
                 groupID: groupRef.current._id
             }
         }).then(r=>{
-            console.log("MEEEMERS",r.data)
                 setMembers(r.data)
         })
     }
