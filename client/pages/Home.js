@@ -176,14 +176,24 @@ export default function HomePage({route, navigation}) {
     useEffect(() => {
         //console.log("THER",newSong.current)
 
-        BackgroundTimer.runBackgroundTimer(() => {
-//code that will be called every 3 seconds
-            console.log("HI")
-            },
-            3000);
-//rest of code will be performing for iOS on background too
+        if(newSong.current && !noSpotifyRef.current){
+            getCurrentSong(token).then(r=>{
+                console.log("")
+            }).catch(e=>console.log("bad",e,token))
+        }
+        const interval = setInterval(() => {
+            if(!noSpotifyRef.current){
+                getCurrentSong(token).then(r=>{
+                    console.log("")
+                }).catch(e=>console.log("bad",e,token))
+            }
 
-        BackgroundTimer.stopBackgroundTimer(); //after this call all code on background stop run.
+            getRequests().then(r => console.log("done")).catch(e=>console.log(e,"Request error"))
+            getGroup().then(r =>  groupsRef.current.owner===cookies.username? addToPlaybackQueue(tokenRef.current).then(r =>null).catch(e=>console.log(e,"Adding queue error")): null).catch(e=>console.log(e,"Group error"))
+
+
+        }, 2000);
+        return () => clearInterval(interval);
 
     }, []);
 

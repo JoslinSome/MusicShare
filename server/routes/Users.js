@@ -54,6 +54,9 @@ router.get("/get-user-by-name", async (req,res) =>{
     }
     res.json({user})
 })
+router.get("/get-client-id", async (req,res) =>{
+    res.json({clientId: process.env.SPOTIFY_CLIENT})
+})
 router.get("/get-user-by-id", async (req,res) =>{
     const {id} = req.query
     const user = await userModel.findById(id)

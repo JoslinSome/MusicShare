@@ -8,7 +8,7 @@ export default function SpotifyAuth({navigation,route}){
 
     const [token, setToken] = useState()
     const tokenRef = useRef();
-    const {user} = route.params
+    const {user,clientId} = route.params
     const discovery = {
         authorizationEndpoint: 'https://accounts.spotify.com/authorize',
         tokenEndpoint: 'https://accounts.spotify.com/api/token',
@@ -16,7 +16,7 @@ export default function SpotifyAuth({navigation,route}){
     const [request, response, promptAsync] = useAuthRequest(
         {
             responseType: ResponseType.Token,
-            clientId: 'clientId',
+            clientId,
             scopes: ['user-read-email','user-read-private','user-top-read','user-read-email', 'streaming',"user-read-playback-state" ,'playlist-modify-public',"user-modify-playback-state","user-read-currently-playing"],
             // In order to follow the "Authorization Code Flow" to fetch token after authorizationEndpoint
             // this must be set to false
