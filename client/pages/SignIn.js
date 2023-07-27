@@ -12,8 +12,8 @@ export default function SignIn({navigation}){
     const [userName, setUserName] = useState("")
     const [password, setPassword] = useState("")
     const [err, setErr] = useState("")
-    const [_,setCookie] = useCookies(["access-token","username"])
-
+    const [cookies,setCookie] = useCookies(["access-token","username"])
+    console.log(cookies)
     async function signIn(){
          await axios.post("http://"+api+`/auth/login`, {
             username: userName,
@@ -28,7 +28,8 @@ export default function SignIn({navigation}){
                     setCookie("username",r.data.username)
                     console.log(r.data,"jkhjkh")
                     //window.localStorage.setItem("userId",r.data.userId)
-                    navigation.navigate('Home',{user: r.data.user})
+                    navigation.popToTop();
+                    navigation.replace('SpotifyAuth',{user: r.data.user})
                 }
 
             })
@@ -36,7 +37,6 @@ export default function SignIn({navigation}){
     }
     return(
         <View style={styles.container}>
-            {()=>CheckLoggedIn(navigation)}
             <ScrollView>
                 <Image source={logo} style={styles.logo}/>
                 <Text style={styles.title}>

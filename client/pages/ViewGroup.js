@@ -16,6 +16,7 @@ import Alert from "../components/Alert"
 import {api} from "../config/Api";
 import * as querystring from "querystring";
 import {useCookies} from "react-cookie";
+import CircleIcon from "../components/CircleIcon";
 
 export default function ViewGroup({navigation,route}){
     const {notifications, group,user} = route.params
@@ -24,14 +25,14 @@ export default function ViewGroup({navigation,route}){
     const [members, setMembers] = useState([])
     const [alertText, setAlertText] = useState("")
     const [userObj, setUserObj] = useState(user)
-    const [groupObj, setGroupObj] = useState({});
+    const [groupObj, setGroupObj] = useState(group);
     const [alert, setAlert] = useState(false)
     const once = useRef();
     const onceID = useRef(true);
     const groupRef = useRef(groupObj);
     const userRef = useRef(user);
     once.current = true
-    //console.log(route.params,"GROOOUP")
+    console.log(route.params,"sdldslkj;lsjfdke;wljfdke;wldfjvcdfkerwldferwdfvdferwfdgerfgre")
     if(onceID.current){
         getGroup().then(r=>SetGroupMembers().then(r => null))
         onceID.current = false
@@ -55,7 +56,6 @@ export default function ViewGroup({navigation,route}){
         }).then(r=>{
             setGroupObj(r.data)
             groupRef.current = r.data
-
         })
     }
     async function getRequests() {
@@ -120,19 +120,15 @@ export default function ViewGroup({navigation,route}){
         }).catch(e=> console.log("error rejceting request"))
     }
     function renderData({item}){
-
+        console.log(groupRef.current,groupObj,"lll")
         return(
-            <View style={styles.circle}>
-                <Text>{groupObj.owner}</Text>
-            </View>
+            <CircleIcon size={true} first={item.owner} last={""} number={3}/>
         )
     }
     function renderData2({item}){
         return(
-            <View style={styles.circle}>
-                <Text>{item.firstname || "S"}</Text>
-            </View>
-        )
+            <CircleIcon  number={7} first={item.firstname[0]} last={item.lastname[0]}/>
+    )
     }
     async function triggerAlert() {
         setAlert(true)
@@ -146,9 +142,8 @@ export default function ViewGroup({navigation,route}){
         return (
             <TouchableOpacity style={styles.vList}>
                 <View style={styles.row}>
-                    <View style={styles.circle}>
-                        <Text>{item.val}</Text>
-                    </View>
+
+                    <CircleIcon number={2} first={item.sender[0]} last={item.sender[1]}/>
                 <View>
                     <Text style={styles.text}>{item.sender} invited you</Text>
                     <View style={styles.row}>
@@ -173,7 +168,7 @@ export default function ViewGroup({navigation,route}){
                 <FlatList
                     style={styles.list}
                     horizontal={true}
-                    data={[groupObj]}
+                    data={[groupRef.current] || [groupObj]}
                     renderItem={renderData}
                     keyExtractor={(item) => item._id}
                 />
@@ -184,7 +179,7 @@ export default function ViewGroup({navigation,route}){
                     horizontal={true}
                     data={members}
                     renderItem={renderData2}
-                    keyExtractor={(item) => item.id}
+                    keyExtractor={(item) => item._id}
                 />
             </View>
             <View style={styles.notifs}>
@@ -193,9 +188,7 @@ export default function ViewGroup({navigation,route}){
                     userObj.initialGroup !== userObj.group?
                         <TouchableOpacity style={styles.vList}>
                             <View style={styles.row}>
-                                <View style={styles.circle}>
-                                    <Text>{userObj.firstname}</Text>
-                                </View>
+                                <CircleIcon first={userObj.firstname[0]} last={userObj.lastname[0]} number={2}/>
                                 <View>
                                     <Text style={styles.text}>Re-join your group?</Text>
                                     <View style={styles.row}>
@@ -215,7 +208,7 @@ export default function ViewGroup({navigation,route}){
                 <FlatList
                     data={requests}
                     renderItem={renderNotificationData}
-                    keyExtractor={(item) => item.id}
+                    keyExtractor={(item) => item._id}
                 />
             </View>
             {

@@ -8,6 +8,7 @@ import {api} from "../config/Api";
 import {useState} from "react";
 import {useCookies} from "react-cookie";
 import Alert from "../components/Alert";
+import CircleIcon from "../components/CircleIcon";
 
 export default function SearchUsers(){
     const [alert, setAlert] = useState(false)
@@ -42,7 +43,7 @@ export default function SearchUsers(){
         return (
             <TouchableOpacity style={styles.list} onPress={() => sendRequest(item.username)}>
                 <List.Section>
-                    <List.Item style={styles.listItem} descriptionStyle={styles.artistText} description={item.username}  titleStyle={styles.text} title={item.firstname+" "+item.lastname} right={() => <Ionicons style={{top:10}} name={"add-circle-outline"} color={"#fff"} size={40}/>} left={() => <Image style={{width: 50, height: 60, opacity: 0.8, left: 5,top: 5}} source={{uri: item.image}}/>}/>
+                    <List.Item style={styles.listItem} descriptionStyle={styles.artistText} description={item.username}  titleStyle={styles.text} title={item.firstname+" "+item.lastname} left={() => <CircleIcon number={6} first={item.firstname[0]} last={item.lastname[0]} />} right={() => <Ionicons style={{top:10}} name={"add-circle-outline"} color={"#fff"} size={40}/>} />
                 </List.Section>
             </TouchableOpacity>
         );
@@ -56,7 +57,7 @@ export default function SearchUsers(){
         <View style={styles.container}>
             <Text style={styles.title}>Invite a user</Text>
             <View style={styles.search} >
-                <TextField placeholder={"Search a song to add to queue"} onChange={(e)=>updateSearch(e)} text={"Search"}  icon={"search-outline"}/>
+                <TextField placeholder={"Search a user to invite to your group"} onChange={(e)=>updateSearch(e)} text={"Search"}  icon={"search-outline"}/>
             </View>
             <FlatList
                 style={styles.flat}
@@ -98,6 +99,7 @@ const styles = StyleSheet.create({
         fontWeight: "bold",
         fontSize: 20
     },
+
     flat: {
         height: "93%",
         flexGrow: 0,

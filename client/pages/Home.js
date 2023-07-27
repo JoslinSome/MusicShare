@@ -8,6 +8,7 @@ import {useEffect, useRef, useState} from "react";
 import axios from "axios";
 import {api} from "../config/Api";
 import { List, MD3Colors } from 'react-native-paper';
+import BackgroundTimer from 'react-native-background-timer';
 
 import {useCookies} from "react-cookie";
 import {Item} from "react-native-paper/src/components/List/List";
@@ -21,20 +22,17 @@ import TextField from "../components/TextField";
 import Alert from "../components/Alert";
 WebBrowser.maybeCompleteAuthSession();
 
-const discovery = {
-    authorizationEndpoint: 'https://accounts.spotify.com/authorize',
-    tokenEndpoint: 'https://accounts.spotify.com/api/token',
-};
+
 export default function HomePage({route, navigation}) {
 
     const [cookies,setCookies] = useCookies(['access-token',"username"])
     const [group, setGroup] = useState({})
-    const [token, setToken] = useState()
     const [text, setText] = useState("")
     const [tracks, setTracks] = useState({})
     const [alert, setAlert] = useState(false)
     const [noSpotify, setNoSpotify] = useState(false)
     const [topTracks, setTopTracks] = useState()
+    const [showSettings, setShowSettings] = useState(false)
     const topTracksRef = useRef();
     const recommendedRef =useRef()
     const currSong = useRef(true)
@@ -46,15 +44,14 @@ export default function HomePage({route, navigation}) {
     const [notifications, setNotifications] = useState()
     const artists = useRef("");
     const newSong = useRef(true);
-    const {user} = route.params
+    const {user,token} = route.params
     const [times, setTimes] = useState(new Date());
     const progressRef = useRef();
     const userRef = useRef();
     const groupsRef = useRef();
-    const tokenRef = useRef();
+    const tokenRef = useRef(token);
     const noSpotifyRef = useRef(noSpotify);
     const once = useRef(true);
-
     async function getGroup(){
         await axios.get("http://" + api + `/auth/get-user-by-name`,{
             params: {
@@ -62,6 +59,7 @@ export default function HomePage({route, navigation}) {
             }
         }).then(async r => {
             userRef.current = r.data.user[0]
+            setShowSettings(true)
             await axios.get("http://" + api + `/group/get-group`, {
                 params: {
                     groupID: userRef.current.group
@@ -79,7 +77,7 @@ export default function HomePage({route, navigation}) {
             }
         }).then(r => {
             setNotifications(r.data)
-        })
+        }).catch(e=>console.log(e,"At requests"))
     }
     const getRecommended = async (token) => {
         await axios.get("https://api.spotify.com/v1/recommendations", {
@@ -94,8 +92,7 @@ export default function HomePage({route, navigation}) {
         }).then(r=> {
             once.current = false
             recommendedRef.current = r.data.tracks
-            console.log("ehhheheeiahdljsabdashjidnlsakh.dojin")
-        })
+        }).catch(e=>console.log(e,"recommended error"))
     }
     const getTopTracks = async () =>{
         await axios.get("https://api.spotify.com/v1/me/top/tracks", {
@@ -106,7 +103,7 @@ export default function HomePage({route, navigation}) {
             topTracksRef.current = r.data.items
         })
     }
-    getTopTracks().then(r => once.current? getRecommended(token).then(r=>console.log("EEadasdadsaE")).catch(e=>console.log(e,noSpotifyRef.current)): null)
+    getTopTracks().then(r => once.current? getRecommended(token).then(r=>console.log("EEadasdadsaE")).catch(e=>console.log(e,noSpotifyRef.current)): null).catch(e=>console.log(e,"Top Tracks Error"))
     const getCurrentSong = async (token) => {
 
         await axios.get("https://api.spotify.com/v1/me/player/currently-playing", {
@@ -179,30 +176,20 @@ export default function HomePage({route, navigation}) {
     useEffect(() => {
         //console.log("THER",newSong.current)
 
-        if(newSong.current && !noSpotifyRef.current){
-            getCurrentSong(token).then(r=>{
-                console.log("")
-            }).catch(e=>console.log("bad",e,token))
-        }
-        const interval = setInterval(() => {
-            if(!noSpotifyRef.current){
-                getCurrentSong(token).then(r=>{
-                    console.log("")
-                }).catch(e=>console.log("bad",e,token))
-            }
+        BackgroundTimer.runBackgroundTimer(() => {
+//code that will be called every 3 seconds
+            console.log("HI")
+            },
+            3000);
+//rest of code will be performing for iOS on background too
 
-            getRequests().then(r => console.log("done"))
-            getGroup().then(r =>  groupsRef.current.owner===cookies.username? addToPlaybackQueue(tokenRef.current).then(r =>null): console.lo)
-
-
-        }, 2000);
-        return () => clearInterval(interval);
+        BackgroundTimer.stopBackgroundTimer(); //after this call all code on background stop run.
 
     }, []);
 
     const enqueue = async (item) => {
         await triggerAlert()
-        addToMongoQueue(item).then(r=>null)
+        addToMongoQueue(item).then(r=>null).catch(e=>console.log(e,"Mongo queue error"))
        // await addToPlaybackQueue(token,item)
     }
 
@@ -212,20 +199,19 @@ export default function HomePage({route, navigation}) {
                 song: item,
                 groupID: groupsRef.current._id
             }
-        }).then(r=>console.log(r.data,"<DDAADA"))
+        }).then(r=>console.log(r.data,"<DDAADA")).catch(e=>console.log(e,"<Mongo adding> error"))
     }
     async function dequeue(){
         await axios.put("http://" + api + `/group/dequeue`,{
             params: {
                 groupID: groupsRef.current._id
             }
-        }).then(r=>console.log(r.data.name,"Deleted"))
+        }).then(r=>console.log(r.data.name,"Deleted")).catch(e=>console.log(e,"Dequeue error"))
     }
     const addToPlaybackQueue = async (token) => {
 
         for (let i = 0; i < groupsRef.current.queue.length; i++) {
             let item = groupsRef.current.queue[i]
-            console.log(item,"ITEEEM",i)
             if(item.uri) {
                 const url = `https://api.spotify.com/v1/me/player/queue?uri=${item.uri}`
 
@@ -236,8 +222,8 @@ export default function HomePage({route, navigation}) {
                     }
                 ).then(r => {
 
-                    console.log(item.name, " QUEUED")
-                    dequeue().then(r => null)
+                    console.log(item.name, " QUEUED", groupsRef.current.owner)
+                    dequeue().then(r => null).catch(e=>console.log(e,"Problem dequeueing"))
                 }).catch(e => console.log(e, "Song not queued"))
 
             }
@@ -266,7 +252,7 @@ export default function HomePage({route, navigation}) {
                         console.log(item.name, " QUEUED")
                         dequeue().then(r => null)
                     }).catch(e => console.log(e, "Song not queued"))
-                })
+                }).catch(e=>console.log(e,"Search error"))
             }
 
         }
@@ -296,23 +282,10 @@ export default function HomePage({route, navigation}) {
             }
             setTracks(trackList)
         }).catch(e=>console.log(e,"Errr"))}
-    const [request, response, promptAsync] = useAuthRequest(
-        {
-            responseType: ResponseType.Token,
-            clientId: 'userId',
-            scopes: ['user-top-read','user-read-email', 'streaming',"user-read-playback-state" ,'playlist-modify-public',"user-modify-playback-state","user-read-currently-playing"],
-            // In order to follow the "Authorization Code Flow" to fetch token after authorizationEndpoint
-            // this must be set to false
-            usePKCE: false,
-            redirectUri: makeRedirectUri({
-                scheme: 'your.app'
-            }),
-        },
-        discovery
-    );
+
 
     function musicBox() {
-        if(noSpotifyRef.current){
+        if(!token){
             return (
                 <TouchableOpacity style={styles.musicBox} onPress={()=>null}>
 
@@ -329,7 +302,7 @@ export default function HomePage({route, navigation}) {
             if(isPlaying.current){
                 return(
                     <View>
-                        <TouchableOpacity style={styles.musicBox} onPress={()=>navigation.navigate("ViewQueue",{token})}>
+                        <TouchableOpacity style={styles.musicBox} onPress={()=>null}>
 
                             <View style={styles.row}>
                                 <Image  source={{uri: image.current}}
@@ -351,7 +324,7 @@ export default function HomePage({route, navigation}) {
 
         else {
             return(
-                <TouchableOpacity  style={styles.musicBox} onPress={()=>navigation.navigate("ViewQueue",{token})}>
+                <TouchableOpacity  style={styles.musicBox} onPress={()=>null}>
 
                     <View style={styles.row}>
                         <Text style={styles.text2}>No song queued</Text>
@@ -365,28 +338,22 @@ export default function HomePage({route, navigation}) {
     }
 
     if(!token){
-        if(!noSpotify){
-            return (
-                <View style={styles.container2}>
-                    <LongBtn text="Log in to Spotify" click={() => {promptAsync().then(r => {
-                        setToken(r.authentication.accessToken)
-                        tokenRef.current =  r.authentication.accessToken
-                    }).catch(e=>console.log())}}/>
-                    <LongBtn text="Continue without Spotify" click={()=>{
-                        setNoSpotify(true)
-                        noSpotifyRef.current = true
-                    }}/>
-                </View>
-            )
-        }
-        else{
-            return(
+
+        return(
                 <View style={styles.container}>
                     <View style={styles.row2}>
                         <Text style={styles.title}>Add to queue</Text>
-                        <View style={styles.iconBtn}>
-                            <IconButton onPress={()=>navigation.navigate('ViewGroup',{notifications, group: groupsRef.current,user:userRef.current})} notifications={true} value={notifications? notifications.length :0} icon={'settings-outline'} noBorder={true} color={"#fff"}/>
-                        </View>
+                        {
+                            groupsRef.current && userRef.current && notifications?
+                                <View style={styles.iconBtn}>
+                                    <IconButton onPress={()=>navigation.navigate('ViewGroup',{notifications, group: groupsRef.current,user:userRef.current})} notifications={true} value={notifications? notifications.length :0} icon={'settings-outline'} noBorder={true} color={"#fff"}/>
+                                </View>:
+                                <View style={styles.iconBtn}>
+                                    <IconButton onPress={()=>null} notifications={true} value={notifications? notifications.length :0} icon={'settings-outline'} noBorder={true} color={"#fff"}/>
+                                </View>
+
+                        }
+
                     </View>
                     <View style={styles.search2} >
                         <TextField placeholder={"Type a song name to add to queue"} text={"Search"} onChange={setText} icon={"search-outline"} token={token}/>
@@ -413,17 +380,22 @@ export default function HomePage({route, navigation}) {
                     {musicBox()}
                 </View>
             )
-        }
-
     }
     else{
         return (
             <View style={styles.container}>
                 <View style={styles.row2}>
                     <Text style={styles.title}>Add to queue</Text>
-                    <View style={styles.iconBtn}>
-                        <IconButton onPress={()=>navigation.navigate('ViewGroup',{notifications, group: groupsRef.current,user:userRef.current})} notifications={true} value={notifications? notifications.length :0} icon={'settings-outline'} noBorder={true} color={"#fff"}/>
-                    </View>
+                    {
+                        groupsRef.current && userRef.current && notifications?
+                            <View style={styles.iconBtn}>
+                                <IconButton onPress={()=>navigation.navigate('ViewGroup',{notifications, group: groupsRef.current,user:userRef.current})} notifications={true} value={notifications? notifications.length :0} icon={'settings-outline'} noBorder={true} color={"#fff"}/>
+                            </View>:
+                            <View style={styles.iconBtn}>
+                                <IconButton onPress={()=>null} notifications={true} value={notifications? notifications.length :0} icon={'settings-outline'} noBorder={true} color={"#fff"}/>
+                            </View>
+
+                    }
                     <View style={styles.iconBtn}>
                         <IconButton icon={'settings-outline'} noBorder={true} color={"white"}/>
                     </View>

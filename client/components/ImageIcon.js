@@ -3,7 +3,7 @@ import {Ionicons} from "@expo/vector-icons";
 import * as React from "react";
 import {titleColor} from "../config/colors";
 
-export default function ImageIcon({size}) {
+export default function ImageIcon({size, image}) {
      {
         if(!size){
             return(
